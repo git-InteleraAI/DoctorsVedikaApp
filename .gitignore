@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+
+# Expo & Build Artifacts
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# Logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.log
+
+# System & IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Environment variables
+.env*.local
+
+# TypeScript
+*.tsbuildinfo
+
+# Generated native folders
+/ios
+/android

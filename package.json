@@ -1,0 +1,22 @@
+{
+  "name": "doctors-vedika-monorepo",
+  "version": "1.0.0",
+  "description": "Doctors Vedika Enterprise Workspace - Multi-Tier Architecture",
+  "private": true,
+  "scripts": {
+    "dev:frontend": "cd frontend && npm start",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:ai": "cd ai-services && uvicorn main:app --reload --port 8000",
+    "start:backend": "cd backend && npm start",
+    "setup": "bash scripts/setup.sh"
+  },
+  "keywords": [
+    "healthcare",
+    "react-native",
+    "express",
+    "fastapi",
+    "enterprise"
+  ],
+  "author": "Doctors Vedika Engineering Team",
+  "license": "ISC"
+}
