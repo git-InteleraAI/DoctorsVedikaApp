@@ -141,7 +141,7 @@ export function QuickBookingBanner({ onBookNow }: QuickBookingBannerProps) {
 
           {/* Book Now CTA Button */}
           <TouchableOpacity
-            className="flex-row items-center self-start bg-[#00A8B5] rounded-full pl-5 pr-2 py-2 mb-3 shadow-md shadow-[#00A8B5]/30 elevation-4"
+            className="flex-row items-center self-start bg-[#0d254c] rounded-full pl-5 pr-2 py-2 mb-3 shadow-md shadow-[#0d254c]/30 elevation-4"
             activeOpacity={0.88}
             onPress={onBookNow}
           >
@@ -150,7 +150,7 @@ export function QuickBookingBanner({ onBookNow }: QuickBookingBannerProps) {
 
             {/* Right Arrow Icon Slot */}
             <View className="w-7 h-7 rounded-full bg-white items-center justify-center">
-              <ArrowRight size={14} color="#00A8B5" />
+              <ArrowRight size={14} color="#0d254c" />
             </View>
           </TouchableOpacity>
 

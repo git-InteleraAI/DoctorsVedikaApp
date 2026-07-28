@@ -24,13 +24,13 @@ export function PrimaryButton({
   const isDisabled = disabled || isLoading;
   const isOutline = variant === 'outline';
 
-  let containerClass = "rounded-full py-3.5 items-center justify-center shadow-md shadow-[#00A8B5]/20 elevation-3 ";
+  let containerClass = "rounded-full py-3.5 items-center justify-center shadow-md shadow-[#0d254c]/20 elevation-3 ";
   if (isOutline) {
-    containerClass += "bg-transparent border-1.5 border-[#0284C7]";
+    containerClass += "bg-transparent border-1.5 border-[#0d254c]";
   } else if (isDisabled) {
-    containerClass += "bg-[#80DEEA] opacity-70";
+    containerClass += "bg-[#0d254c]/50 opacity-70";
   } else {
-    containerClass += "bg-[#0284C7]";
+    containerClass += "bg-[#0d254c]";
   }
 
   let textClass = "font-bold text-base ";

@@ -301,8 +301,8 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   categoryChipActive: {
-    backgroundColor: '#00A8B5',
-    borderColor: '#00A8B5',
+    backgroundColor: '#0d254c',
+    borderColor: '#0d254c',
   },
   categoryText: {
     fontSize: 12,

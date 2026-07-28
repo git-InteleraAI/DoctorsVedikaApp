@@ -25,6 +25,7 @@ import { getPatientFavorites, togglePatientFavorite } from '../../../features/pa
 import { useAppNavigation } from '../../../navigation/navigationHelpers';
 import type { DoctorSortOption } from '../../../features/doctor-discovery/types';
 import type { DoctorsRow } from '../../../types/database';
+import assets from '../../../core/assets';
 
 interface SpecialtyCategory {
   id: string;
@@ -36,32 +37,37 @@ const CATEGORIES = (active: string): SpecialtyCategory[] => [
   {
     id: 'All',
     name: 'All',
-    icon: <Feather name="grid" size={20} color={active === 'All' ? theme.colors.textInverse : '#00A8B5'} />,
+    icon: <Feather name="grid" size={24} color={active === 'All' ? theme.colors.textInverse : '#00A8B5'} />,
   },
   {
-    id: 'Cardiologist',
+    id: 'Cardiology',
     name: 'Cardiology',
-    icon: <Ionicons name="heart-outline" size={20} color={active === 'Cardiologist' ? theme.colors.textInverse : '#3F51B5'} />,
+    icon: <Image source={assets.categories.cardiology} style={{ width: 48, height: 48, borderRadius: 24, resizeMode: 'cover' }} />,
   },
   {
-    id: 'Dermatologist',
-    name: 'Dermatology',
-    icon: <MaterialCommunityIcons name="face-woman-outline" size={20} color={active === 'Dermatologist' ? theme.colors.textInverse : '#9C27B0'} />,
+    id: 'Gynecology',
+    name: 'Gynecology',
+    icon: <Image source={assets.categories.gynecology} style={{ width: 48, height: 48, borderRadius: 24, resizeMode: 'cover' }} />,
   },
   {
-    id: 'Neurologist',
+    id: 'Neurology',
     name: 'Neurology',
-    icon: <MaterialCommunityIcons name="brain" size={20} color={active === 'Neurologist' ? theme.colors.textInverse : '#2196F3'} />,
+    icon: <Image source={assets.categories.neurology} style={{ width: 48, height: 48, borderRadius: 24, resizeMode: 'cover' }} />,
   },
   {
-    id: 'Pediatrician',
+    id: 'Orthopedics',
+    name: 'Orthopedics',
+    icon: <Image source={assets.categories.orthopedics} style={{ width: 48, height: 48, borderRadius: 24, resizeMode: 'cover' }} />,
+  },
+  {
+    id: 'Pediatrics',
     name: 'Pediatrics',
-    icon: <MaterialCommunityIcons name="baby-face-outline" size={20} color={active === 'Pediatrician' ? theme.colors.textInverse : '#03A9F4'} />,
+    icon: <Image source={assets.categories.pediatrics} style={{ width: 48, height: 48, borderRadius: 24, resizeMode: 'cover' }} />,
   },
   {
     id: 'More',
     name: 'More',
-    icon: <Ionicons name="ellipsis-horizontal" size={20} color={active === 'More' ? theme.colors.textInverse : '#607D8B'} />,
+    icon: <Ionicons name="ellipsis-horizontal" size={24} color={active === 'More' ? theme.colors.textInverse : '#607D8B'} />,
   },
 ];
 
@@ -125,10 +131,20 @@ export function DiscoverScreen() {
     let result = [...doctors];
 
     if (selectedCategory !== 'All' && selectedCategory !== 'More') {
-      result = result.filter(
-        (doc) =>
-          doc.doctor_specialization?.toLowerCase() === selectedCategory.toLowerCase()
-      );
+      const catLower = selectedCategory.toLowerCase();
+      result = result.filter((doc) => {
+        const spec = (doc.doctor_specialization || '').toLowerCase();
+        return (
+          spec.includes(catLower) ||
+          catLower.includes(spec) ||
+          (catLower.startsWith('cardio') && spec.includes('cardio')) ||
+          (catLower.startsWith('gynaec') && spec.includes('gyn')) ||
+          (catLower.startsWith('gynec') && spec.includes('gyn')) ||
+          (catLower.startsWith('neuro') && spec.includes('neuro')) ||
+          (catLower.startsWith('pediat') && spec.includes('pediat')) ||
+          (catLower.startsWith('ortho') && spec.includes('ortho'))
+        );
+      });
     }
 
     if (searchQuery.trim()) {
@@ -530,10 +546,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#F1F5F9',
+    overflow: 'hidden',
     ...theme.shadow.card,
   },
   categoryCircleActive: {
-    backgroundColor: '#0F525D',
+    backgroundColor: '#0d254c',
+    borderColor: '#0d254c',
   },
   categoryLabel: {
     fontSize: 11,
@@ -543,7 +561,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   categoryLabelActive: {
-    color: '#0F525D',
+    color: '#0d254c',
     fontWeight: '700',
   },
   subHeader: {
@@ -734,7 +752,7 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   bookButton: {
-    backgroundColor: '#0F525D',
+    backgroundColor: '#0d254c',
     borderRadius: theme.radius.pill,
     paddingHorizontal: theme.spacing.sm + 2,
     paddingVertical: theme.spacing.xs + 2,

@@ -53,6 +53,13 @@ export const assets = {
     profile: require('../../../assets/nav-bar/nav-profile-icon.png'),
     profileSelected: require('../../../assets/nav-bar/nav-profile-selected-icon.png'),
   },
+  categories: {
+    gynecology: require('../../../assets/gynocology-image.png'),
+    cardiology: require('../../../assets/heart-image.png'),
+    neurology: require('../../../assets/brain-image.png'),
+    orthopedics: require('../../../assets/back-bone-image.png'),
+    pediatrics: require('../../../assets/baby-image.png'),
+  },
 } as const;
 
 

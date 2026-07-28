@@ -288,10 +288,10 @@ export function HomeScreen() {
               </View>
 
               <TouchableOpacity
-                className="bg-[#F0FDFD] border border-[#B2EBF2] rounded-full px-4 py-1.5"
+                className="bg-[#0d254c] border border-[#0d254c] rounded-full px-4 py-1.5"
                 onPress={() => navigation.navigate('DoctorProfile', { doctor })}
               >
-                <Text className="text-xs font-bold color-[#00A8B5]">Book</Text>
+                <Text className="text-xs font-bold color-white">Book</Text>
               </TouchableOpacity>
             </TouchableOpacity>
           );
