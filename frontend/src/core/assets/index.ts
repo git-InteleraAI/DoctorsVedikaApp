@@ -16,29 +16,29 @@ export const assets = {
   },
   images: {
     doctor: require('../../../assets/doctor-image.png'),
-    doctorIcon: require('../../../assets/doctor-icon.png'),
+    doctorIcon: require('../../../assets/doctor-image.png'),
     patient: require('../../../assets/patient-image.png'),
-    patientIcon: require('../../../assets/patient-icon.png'),
+    patientIcon: require('../../../assets/patient-image.png'),
     stethoscope: require('../../../assets/Stetescope.png'),
     booking: require('../../../assets/Booking_Icon.png'),
     heartBeep: require('../../../assets/heart-beep-element.png'),
     heartLine: require('../../../assets/heart-line-health-icons.png'),
-    healthcare: require('../../../assets/healthcare.png'),
-    business: require('../../../assets/business.png'),
+    healthcare: require('../../../assets/find-doctor-icon.png'),
+    business: require('../../../assets/find-doctor-icon.png'),
     findDoctor: require('../../../assets/find-doctor-icon.png'),
   },
   icons: {
-    document: require('../../../assets/document.png'),
-    home: require('../../../assets/home-icon.png'),
+    document: require('../../../assets/appointment-booking-icon.png'),
+    home: require('../../../assets/nav-bar/nav-home-icon.png'),
     navHome: require('../../../assets/nav-bar/nav-home-icon.png'),
     navHomeSelected: require('../../../assets/nav-bar/nav-home-selected-icon.png'),
-    medicalRecord: require('../../../assets/medical-record-icon.png'),
-    notificationBell: require('../../../assets/notification-bell-icon.png'),
+    medicalRecord: require('../../../assets/appointment-booking-icon.png'),
+    notificationBell: require('../../../assets/3d-notification-bell-icon.png'),
     notificationBell3d: require('../../../assets/3d-notification-bell-icon.png'),
-    prescription: require('../../../assets/prescription-icon.png'),
-    search: require('../../../assets/search-icon.png'),
-    user: require('../../../assets/user.png'),
-    video: require('../../../assets/video-icon.png'),
+    prescription: require('../../../assets/appointment-booking-icon.png'),
+    search: require('../../../assets/find-doctor-icon.png'),
+    user: require('../../../assets/nav-bar/nav-profile-icon.png'),
+    video: require('../../../assets/nav-bar/nav-video-icon.png'),
     appointmentBooking: require('../../../assets/appointment-booking-icon.png'),
   },
   navBar: {
@@ -60,8 +60,14 @@ export const assets = {
     orthopedics: require('../../../assets/back-bone-image.png'),
     pediatrics: require('../../../assets/baby-image.png'),
   },
+  bento: {
+    findDoctor: require('../../../assets/home-bento-grid/find-doctor-image.png'),
+    educationalVideos: require('../../../assets/home-bento-grid/educational-videos-image.png'),
+    healthRecords: require('../../../assets/home-bento-grid/health-record-image.png'),
+    prescriptions: require('../../../assets/home-bento-grid/prescription-image.png'),
+    reminders: require('../../../assets/home-bento-grid/remainder-image.png'),
+    askDoctor: require('../../../assets/home-bento-grid/ask-a-doctor.png'),
+  },
 } as const;
-
-
 
 export default assets;

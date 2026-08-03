@@ -369,79 +369,87 @@ export function DiscoverScreen() {
                 activeOpacity={0.9}
                 onPress={() => appNav.goToDoctorProfile(item)}
               >
-                <TouchableOpacity
-                  style={styles.favoriteButton}
-                  onPress={async () => {
-                    if (profile?.id) {
-                      const newFav = await togglePatientFavorite(profile.id, item.doctor_id, isFav);
-                      setFavoriteDoctorIds((prev) =>
-                        newFav ? [...prev, item.doctor_id] : prev.filter((id) => id !== item.doctor_id)
-                      );
-                    }
-                  }}
-                >
-                  <Ionicons
-                    name={isFav ? 'heart' : 'heart-outline'}
-                    size={20}
-                    color={isFav ? '#EF4444' : '#94A3B8'}
-                  />
-                </TouchableOpacity>
-
-                <View style={styles.avatarContainer}>
-                  {item.doctor_profile_photo ? (
-                    <Image source={{ uri: item.doctor_profile_photo }} style={styles.avatarImage} />
-                  ) : (
-                    <View style={styles.avatarFallback}>
-                      <Text style={styles.avatarFallbackText}>{initials}</Text>
-                    </View>
-                  )}
-                  <View style={styles.activeDot} />
-                </View>
-
-                <View style={styles.infoSection}>
-                  <View style={styles.nameRow}>
-                    <Text style={styles.doctorName} numberOfLines={1}>
-                      Dr. {item.doctor_name}
-                    </Text>
-                    <MaterialCommunityIcons name="check-decagram" size={16} color="#00BCD4" style={styles.verifiedIcon} />
+                {/* Top Row: Avatar + Doctor Info + Favorite Button */}
+                <View style={styles.cardHeaderRow}>
+                  <View style={styles.avatarContainer}>
+                    {item.doctor_profile_photo ? (
+                      <Image source={{ uri: item.doctor_profile_photo }} style={styles.avatarImage} />
+                    ) : (
+                      <View style={styles.avatarFallback}>
+                        <Text style={styles.avatarFallbackText}>{initials}</Text>
+                      </View>
+                    )}
+                    <View style={styles.activeDot} />
                   </View>
 
-                  <Text style={styles.specializationText}>
-                    {item.doctor_specialization}  •  {item.doctor_experience} Years Exp
-                  </Text>
-
-                  <View style={styles.ratingRow}>
-                    <Ionicons name="star" size={14} color="#FFC107" />
-                    <Text style={styles.ratingValue}>
-                      {item.doctor_rating !== undefined && item.doctor_rating !== null ? item.doctor_rating : '4.9'}{' '}
-                      <Text style={styles.reviewCount}>
-                        ({item.doctor_reviews_count !== undefined && item.doctor_reviews_count !== null ? item.doctor_reviews_count : '120'} Reviews)
+                  <View style={styles.infoSection}>
+                    <View style={styles.nameRow}>
+                      <Text style={styles.doctorName} numberOfLines={1}>
+                        Dr. {item.doctor_name}
                       </Text>
-                    </Text>
-                  </View>
+                      <MaterialCommunityIcons name="check-decagram" size={16} color="#00BCD4" style={styles.verifiedIcon} />
+                    </View>
 
-                  {item.doctor_clinic_name ? (
-                    <View style={styles.clinicRow}>
-                      <Feather name="map-pin" size={12} color="#64748B" />
-                      <Text style={styles.clinicText} numberOfLines={1}>
-                        {item.doctor_clinic_name}
+                    <Text style={styles.specializationText}>
+                      {item.doctor_specialization ?? 'General Physician'}  •  {item.doctor_experience ?? 5}+ Yrs Exp
+                    </Text>
+
+                    <View style={styles.ratingRow}>
+                      <Ionicons name="star" size={13} color="#FFC107" />
+                      <Text style={styles.ratingValue}>
+                        {item.doctor_rating !== undefined && item.doctor_rating !== null ? item.doctor_rating : '4.9'}{' '}
+                        <Text style={styles.reviewCount}>
+                          ({item.doctor_reviews_count !== undefined && item.doctor_reviews_count !== null ? item.doctor_reviews_count : '120'} Reviews)
+                        </Text>
                       </Text>
                     </View>
-                  ) : null}
 
-                  <View style={styles.tagsContainer}>
-                    <View style={styles.tag}>
-                      <Text style={styles.tagText}>{item.doctor_qualification ?? 'MBBS, MD'}</Text>
-                    </View>
-                    <View style={styles.tag}>
-                      <Text style={styles.tagText}>{item.doctor_languages ?? 'General Specialist'}</Text>
-                    </View>
+                    {item.doctor_clinic_name ? (
+                      <View style={styles.clinicRow}>
+                        <Feather name="map-pin" size={11} color="#64748B" />
+                        <Text style={styles.clinicText} numberOfLines={1}>
+                          {item.doctor_clinic_name}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.favoriteButton}
+                    onPress={async () => {
+                      if (profile?.id) {
+                        const newFav = await togglePatientFavorite(profile.id, item.doctor_id, isFav);
+                        setFavoriteDoctorIds((prev) =>
+                          newFav ? [...prev, item.doctor_id] : prev.filter((id) => id !== item.doctor_id)
+                        );
+                      }
+                    }}
+                  >
+                    <Ionicons
+                      name={isFav ? 'heart' : 'heart-outline'}
+                      size={18}
+                      color={isFav ? '#EF4444' : '#94A3B8'}
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Tags Row */}
+                <View style={styles.tagsContainer}>
+                  <View style={styles.tag}>
+                    <Text style={styles.tagText}>{item.doctor_qualification ?? 'MBBS, MD'}</Text>
+                  </View>
+                  <View style={styles.tag}>
+                    <Text style={styles.tagText}>{item.doctor_languages ?? 'General Specialist'}</Text>
                   </View>
                 </View>
 
-                <View style={styles.actionSection}>
-                  <Text style={styles.feeLabel}>CONSULTATION FEE</Text>
-                  <Text style={styles.feeValue}>₹{item.doctor_consultation_fee ?? 500}</Text>
+                {/* Footer Row: Consultation Fee & Book Now Button */}
+                <View style={styles.cardFooterRow}>
+                  <View style={styles.feeContainer}>
+                    <Text style={styles.feeLabel}>CONSULTATION FEE</Text>
+                    <Text style={styles.feeValue}>₹{item.doctor_consultation_fee ?? 500}</Text>
+                  </View>
+
                   <TouchableOpacity
                     style={styles.bookButton}
                     onPress={() => (navigation as any).navigate('DoctorProfile', { doctor: item })}
@@ -620,35 +628,47 @@ const styles = StyleSheet.create({
   },
   doctorCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: theme.radius.lg,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: '#F1F5F9',
-    padding: theme.spacing.md,
+    padding: 14,
+    marginBottom: 14,
+    shadowColor: '#64748B',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  cardHeaderRow: {
     flexDirection: 'row',
-    position: 'relative',
-    ...theme.shadow.card,
+    alignItems: 'flex-start',
+    marginBottom: 10,
   },
   favoriteButton: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    zIndex: 2,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F8FAFC',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   avatarContainer: {
     position: 'relative',
-    marginRight: theme.spacing.md,
+    marginRight: 12,
   },
   avatarImage: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: '#F1F5F9',
   },
   avatarFallback: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    backgroundColor: theme.colors.primary,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#00A8B5',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -669,8 +689,9 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
   },
   infoSection: {
-    flex: 1.4,
+    flex: 1,
     justifyContent: 'center',
+    paddingRight: 6,
   },
   nameRow: {
     flexDirection: 'row',
@@ -678,9 +699,9 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   doctorName: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
-    color: '#1E293B',
+    color: '#0E224A',
     maxWidth: '85%',
   },
   verifiedIcon: {
@@ -688,14 +709,15 @@ const styles = StyleSheet.create({
   },
   specializationText: {
     fontSize: 12,
-    color: '#64748B',
-    marginBottom: 4,
+    color: '#00A8B5',
+    fontWeight: '600',
+    marginBottom: 3,
   },
   ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginBottom: 4,
+    marginBottom: 3,
   },
   ratingValue: {
     fontSize: 12,
@@ -710,57 +732,60 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginBottom: 6,
   },
   clinicText: {
-    fontSize: 12,
+    fontSize: 11.5,
     color: '#64748B',
   },
   tagsContainer: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 6,
+    marginBottom: 12,
   },
   tag: {
-    backgroundColor: theme.colors.accentSoft,
-    borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    backgroundColor: '#E0F7FA',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
   },
   tagText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#0F525D',
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#00838F',
   },
-  actionSection: {
-    flex: 0.9,
+  cardFooterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+  },
+  feeContainer: {
     justifyContent: 'center',
-    alignItems: 'flex-end',
-    borderLeftWidth: 1,
-    borderLeftColor: '#F1F5F9',
-    paddingLeft: theme.spacing.sm,
   },
   feeLabel: {
-    fontSize: 9,
+    fontSize: 10,
     color: '#94A3B8',
     fontWeight: '700',
-    marginBottom: 2,
+    marginBottom: 1,
   },
   feeValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#0F525D',
-    marginBottom: theme.spacing.md,
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#00A8B5',
   },
   bookButton: {
-    backgroundColor: '#0d254c',
-    borderRadius: theme.radius.pill,
-    paddingHorizontal: theme.spacing.sm + 2,
-    paddingVertical: theme.spacing.xs + 2,
+    backgroundColor: '#0E224A',
+    borderRadius: 20,
+    paddingHorizontal: 18,
+    paddingVertical: 9,
     alignItems: 'center',
-    width: '100%',
+    justifyContent: 'center',
   },
   bookButtonText: {
-    fontSize: 12,
+    fontSize: 12.5,
     fontWeight: '700',
     color: '#FFFFFF',
   },

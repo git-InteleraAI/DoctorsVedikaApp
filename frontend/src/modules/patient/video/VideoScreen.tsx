@@ -90,8 +90,8 @@ export function VideoScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.headerTitle}>Video Consult & Health Library</Text>
-          <Text style={styles.headerSubtitle}>Watch verified medical guidance & talks</Text>
+          <Text style={styles.headerTitle}>Educational Health Videos</Text>
+          <Text style={styles.headerSubtitle}>Watch verified medical guidance & doctor talks</Text>
         </View>
         <TouchableOpacity style={styles.searchBtn} activeOpacity={0.8}>
           <Feather name="search" size={20} color="#00A8B5" />

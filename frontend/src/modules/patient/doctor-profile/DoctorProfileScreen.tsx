@@ -1,8 +1,12 @@
 /**
  * frontend/src/modules/patient/doctor-profile/DoctorProfileScreen.tsx
- * Premium doctor profile card with calendar, time slots, and Pay-at-Clinic modal.
+ * Complete visual & layout overhaul of Doctor Details & Appointment Booking Screen
+ * Inspired by Pinterest UI references: Glassmorphic hero, floating contact bar,
+ * 3-column stats pill, curved bottom sheet container (rounded-t-32), date capsules,
+ * and sticky "Book Session" button.
+ * Maintains 100% theme colors (#00A8B5, #0E224A, #E0F7FA, #FFFFFF) and real-time functionality.
  */
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -16,32 +20,32 @@ import {
   Linking,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import {
   ArrowLeft,
   Heart,
   BadgeCheck,
   Star,
   Users,
-  Award,
   Quote,
-  MessageSquare,
   MapPin,
-  Phone,
-  Navigation as NavigationIcon,
-  MessageCircle,
   X,
+  Clock,
+  CheckCircle2,
+  User,
+  Calendar as CalendarIcon,
 } from 'lucide-react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { theme } from '../../../core/theme';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getBookedSlots, subscribeBookedSlots } from '../../../features/doctor-discovery/api';
 import { createAppointment } from '../../../features/appointments/api';
 import { PrimaryButton } from '../../../core/components/PrimaryButton';
-import type { DoctorsRow } from '../../../types/database';
 import type { PatientStackParamList } from '../../../app/navigation/PatientNavigator';
 
 type RoutePropType = RouteProp<PatientStackParamList, 'DoctorProfile'>;
+type PatientNavProp = NativeStackNavigationProp<PatientStackParamList>;
 
 const AVAILABLE_SLOTS = [
   '09:00 AM',
@@ -58,12 +62,14 @@ const AVAILABLE_SLOTS = [
 
 export function DoctorProfileScreen() {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation();
+  const navigation = useNavigation<PatientNavProp>();
   const route = useRoute<RoutePropType>();
   const { doctor } = route.params;
   const { profile } = useAuth();
 
-  const dates = React.useMemo(() => {
+  const [activeTab, setActiveTab] = useState<'details' | 'book'>('details');
+
+  const dates = useMemo(() => {
     const arr = [];
     for (let i = 0; i < 7; i++) {
       const d = new Date();
@@ -85,6 +91,19 @@ export function DoctorProfileScreen() {
 
   const slotUnsubscribeRef = useRef<(() => void) | null>(null);
 
+  const openExternalUrl = useCallback(async (url: string, fallbackAlertMsg: string) => {
+    try {
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert('Notice', fallbackAlertMsg);
+      }
+    } catch {
+      Alert.alert('Error', 'Unable to launch application.');
+    }
+  }, []);
+
   const getISODateString = useCallback((date: Date) => {
     const yyyy = date.getFullYear();
     const mm = String(date.getMonth() + 1).padStart(2, '0');
@@ -94,10 +113,16 @@ export function DoctorProfileScreen() {
 
   const loadBookedSlots = useCallback(async (date: Date) => {
     setIsSlotsLoading(true);
-    const dateStr = getISODateString(date);
-    const slots = await getBookedSlots(doctor.doctor_id, dateStr);
-    setIsSlotsLoading(false);
-    setBookedSlots(slots);
+    try {
+      const dateStr = getISODateString(date);
+      const slots = await getBookedSlots(doctor.doctor_id, dateStr);
+      setBookedSlots(slots || []);
+    } catch (err) {
+      console.error('Failed to load booked slots:', err);
+      Alert.alert('Error', 'Unable to fetch available time slots. Please try again.');
+    } finally {
+      setIsSlotsLoading(false);
+    }
   }, [doctor.doctor_id, getISODateString]);
 
   useEffect(() => {
@@ -140,17 +165,29 @@ export function DoctorProfileScreen() {
     };
   }, [selectedDate, doctor.doctor_id, getISODateString, loadBookedSlots]);
 
-  const initials = doctor.doctor_name
-    .split(' ')
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
+  const initials = useMemo(() => {
+    return doctor.doctor_name
+      .split(' ')
+      .map((w) => w[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
+  }, [doctor.doctor_name]);
 
   const formatDateLabel = useCallback((date: Date) => {
     const options: Intl.DateTimeFormatOptions = { weekday: 'short', day: 'numeric' };
     return date.toLocaleDateString('en-US', options);
   }, []);
+
+  const currentMonthName = useMemo(() => {
+    return selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  }, [selectedDate]);
+
+  const parsedLanguages = useMemo(() => {
+    return (doctor.doctor_languages || 'English, Telugu, Hindi')
+      .split(',')
+      .map((lang) => lang.trim());
+  }, [doctor.doctor_languages]);
 
   async function handleBookAppointment() {
     if (!selectedSlot) {
@@ -161,9 +198,8 @@ export function DoctorProfileScreen() {
   }
 
   async function confirmBooking() {
-    if (!profile?.id) return;
+    if (!profile?.id || isBookingLoading) return;
     setIsBookingLoading(true);
-    setShowConfirmModal(false);
 
     const dateStr = getISODateString(selectedDate);
 
@@ -177,7 +213,7 @@ export function DoctorProfileScreen() {
         payment_method: 'pay_at_clinic',
       });
 
-      setIsBookingLoading(false);
+      setShowConfirmModal(false);
       Alert.alert(
         'Booking Confirmed!',
         `Your consultation with Dr. ${doctor.doctor_name} on ${dateStr} at ${selectedSlot} is scheduled.`,
@@ -185,274 +221,426 @@ export function DoctorProfileScreen() {
           {
             text: 'View Appointments',
             onPress: () => {
-              (navigation as any).navigate('AppointmentsTab');
+              navigation.navigate('PatientTabs', { screen: 'Appointments' } as any);
             },
           },
           { text: 'Done', style: 'cancel' },
         ]
       );
     } catch (err: any) {
+      Alert.alert('Booking Failed', err.message || 'Unable to complete appointment booking.');
+    } finally {
       setIsBookingLoading(false);
-      Alert.alert('Booking Failed', err.message);
     }
   }
 
   return (
-    <View className="flex-1 bg-slate-50" style={{ paddingTop: insets.top }}>
-      <View className="flex-row items-center justify-between px-5 py-3.5 border-b border-slate-100 bg-white">
-        <TouchableOpacity className="w-9 h-9 rounded-full bg-white items-center justify-center border border-slate-200" onPress={() => navigation.goBack()}>
-          <ArrowLeft size={22} color="#1E293B" />
-        </TouchableOpacity>
-        <Text className="text-lg font-bold color-[#0E224A]">Doctor Details</Text>
-        <TouchableOpacity className="w-9 h-9 rounded-full bg-white items-center justify-center border border-slate-200" onPress={() => setIsFavorite(!isFavorite)}>
-          <Heart
-            size={22}
-            color={isFavorite ? '#EF4444' : '#1E293B'}
-            fill={isFavorite ? '#EF4444' : 'transparent'}
-          />
-        </TouchableOpacity>
-      </View>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ flexGrow: 1 }}
+      >
+        {/* GLASSMorphic TOP HERO SECTION */}
+        <View style={styles.heroSectionBackground}>
+          {/* Floating Top Navigation Header */}
+          <View style={styles.topNavRow}>
+            <TouchableOpacity style={styles.glassHeaderBtn} onPress={() => navigation.goBack()}>
+              <ArrowLeft size={20} color="#0E224A" />
+            </TouchableOpacity>
 
+            <View style={styles.glassHeaderTitleBadge}>
+              <Text style={styles.glassHeaderTitleText}>Doctor Details</Text>
+            </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[{ paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.md, paddingBottom: insets.bottom + theme.spacing.lg }]}>
-        <View className="bg-white rounded-2xl p-4 flex-row items-center border border-slate-100 mb-4 shadow-sm">
-          <View className="relative mr-4">
-            {doctor.doctor_profile_photo ? (
-              <Image source={{ uri: doctor.doctor_profile_photo }} className="w-20 h-20 rounded-full bg-slate-100" contentFit="cover" />
-            ) : (
-              <View className="w-20 h-20 rounded-full bg-[#0284C7] items-center justify-center">
-                <Text className="color-white font-bold text-2xl">{initials}</Text>
+            <TouchableOpacity style={styles.glassHeaderBtn} onPress={() => setIsFavorite(!isFavorite)}>
+              <Heart
+                size={20}
+                color={isFavorite ? '#EF4444' : '#0E224A'}
+                fill={isFavorite ? '#EF4444' : 'transparent'}
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* Doctor Portrait & Details */}
+          <View style={styles.heroProfileRow}>
+            <View style={styles.heroAvatarWrapper}>
+              {doctor.doctor_profile_photo ? (
+                <Image source={{ uri: doctor.doctor_profile_photo }} style={styles.heroAvatarImg} contentFit="cover" />
+              ) : (
+                <View style={styles.heroAvatarInitials}>
+                  <Text style={styles.heroInitialsText}>{initials}</Text>
+                </View>
+              )}
+              <View style={styles.heroOnlineBadge} />
+            </View>
+
+            <View style={styles.heroTextCol}>
+              <View style={styles.ratingGlassBadge}>
+                <Star size={12} color="#D97706" fill="#D97706" />
+                <Text style={styles.ratingBadgeText}>
+                  {doctor.doctor_rating !== undefined && doctor.doctor_rating !== null ? doctor.doctor_rating : '4.9'}
+                </Text>
+                <Text style={styles.reviewsBadgeText}>
+                  ({doctor.doctor_reviews_count ?? 120})
+                </Text>
               </View>
-            )}
-            <View className="absolute bottom-0.5 right-0.5 w-3.5 h-3.5 rounded-full bg-green-500 border-2 border-white" />
-          </View>
 
-          <View className="flex-1">
-            <View className="flex-row items-center mb-0.5">
-              <Text className="text-lg font-bold color-slate-800 max-w-[85%]" numberOfLines={1}>
-                Dr. {doctor.doctor_name}
+              <View style={styles.heroNameRow}>
+                <Text style={styles.heroNameText} numberOfLines={1}>
+                  Dr. {doctor.doctor_name}
+                </Text>
+                <BadgeCheck size={18} color="#00BCD4" style={{ marginLeft: 4 }} />
+              </View>
+
+              <Text style={styles.heroSpecText}>
+                {doctor.doctor_specialization ?? 'General Physician'}
               </Text>
-              <BadgeCheck size={18} color="#00BCD4" className="ml-1" />
-            </View>
-            <Text className="text-xs color-[#00BCD4] font-semibold mb-0.5">{doctor.doctor_specialization ?? 'General Physician'}</Text>
-            <Text className="text-xs color-slate-500 mb-1">{doctor.doctor_qualification ?? 'MBBS, MD'}</Text>
-
-            <View className="bg-cyan-50 rounded px-2 py-1 self-start mt-1">
-              <Text className="text-xs font-bold color-[#00A8B5]">Consultation Fee: ₹{doctor.doctor_consultation_fee ?? 500}</Text>
-            </View>
-          </View>
-        </View>
-
-        <View className="flex-row justify-between mb-4 gap-2">
-          <View className="flex-1 bg-white rounded-xl py-4 items-center border border-slate-100 shadow-sm">
-            <View className="w-9 h-9 rounded-full bg-amber-100 items-center justify-center mb-1.5">
-              <Star size={18} color="#FBC02D" fill="#FBC02D" />
-            </View>
-            <Text className="text-sm font-bold color-slate-800 mb-0.5">
-              {doctor.doctor_rating !== undefined && doctor.doctor_rating !== null
-                ? `${doctor.doctor_rating} ★`
-                : '4.9 ★'}
-            </Text>
-            <Text className="text-[10px] color-slate-500 font-semibold">
-              {doctor.doctor_reviews_count !== undefined && doctor.doctor_reviews_count !== null
-                ? `${doctor.doctor_reviews_count}+ Reviews`
-                : '120+ Reviews'}
-            </Text>
-          </View>
-
-          <View className="flex-1 bg-white rounded-xl py-4 items-center border border-slate-100 shadow-sm">
-            <View className="w-9 h-9 rounded-full bg-teal-100 items-center justify-center mb-1.5">
-              <Users size={18} color="#00A8B5" />
-            </View>
-            <Text className="text-sm font-bold color-slate-800 mb-0.5">
-              {doctor.doctor_patients_treated !== undefined && doctor.doctor_patients_treated !== null
-                ? `${doctor.doctor_patients_treated}+`
-                : '1,000+'}
-            </Text>
-            <Text className="text-[10px] color-slate-500 font-semibold">Patients</Text>
-          </View>
-
-          <View className="flex-1 bg-white rounded-xl py-4 items-center border border-slate-100 shadow-sm">
-            <View className="w-9 h-9 rounded-full bg-blue-100 items-center justify-center mb-1.5">
-              <Award size={18} color="#2196F3" />
-            </View>
-            <Text className="text-sm font-bold color-slate-800 mb-0.5">{doctor.doctor_experience ?? 5}+ Years</Text>
-            <Text className="text-[10px] color-slate-500 font-semibold">Experience</Text>
-          </View>
-        </View>
-
-        <View className="bg-white rounded-2xl p-4 border border-slate-100 mb-4 shadow-sm">
-          <Text className="text-base font-bold color-slate-800 mb-2 mt-1">About Doctor</Text>
-
-          <View className="flex-row bg-emerald-50/60 p-4 rounded-xl border-l-4 border-[#00A8B5] mb-4 items-start">
-            <Quote size={20} color="#00A8B5" className="mr-1.5 -mt-0.5" />
-            <Text className="flex-1 text-xs color-[#1B4332] italic leading-4.5 ml-2">
-              {doctor.doctor_quote
-                ? `"${doctor.doctor_quote.replace(/['"]+/g, '')}"`
-                : '"Your health is your greatest wealth. My mission is to deliver comprehensive, compassionate, and personalized care."'}
-            </Text>
-          </View>
-
-          <Text className="text-xs color-slate-600 leading-5 mb-4">
-            {doctor.doctor_description ||
-              `Dr. ${doctor.doctor_name} is a highly accomplished ${doctor.doctor_specialization ?? 'Specialist'} with extensive training in diagnosing and managing complex cases.`}
-          </Text>
-
-          <View className="h-[1px] bg-slate-100 mb-4" />
-
-          <View className="flex-row items-center gap-2">
-            <Text className="text-xs font-bold color-slate-700">Languages:</Text>
-            <Text className="text-xs color-[#00A8B5] font-semibold">{doctor.doctor_languages || 'English, Telugu, Hindi'}</Text>
-          </View>
-
-          <TouchableOpacity
-            className="flex-row items-center justify-center gap-2 bg-teal-50 border border-teal-200 rounded-lg py-2.5 mt-4"
-            onPress={() => (navigation as any).navigate('AskDoctor', {
-              preselectedDoctorId: doctor.doctor_id,
-              preselectedDoctorName: doctor.doctor_name,
-            })}
-          >
-            <MessageSquare size={15} color="#00A8B5" />
-            <Text className="text-xs font-bold color-[#00A8B5]">Ask Dr. {doctor.doctor_name.split(' ')[0]} a Question</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View className="bg-white rounded-2xl p-4 border border-slate-100 mb-4 shadow-sm">
-          <Text className="text-base font-bold color-slate-800 mb-2 mt-1">Clinic & Quick Contact</Text>
-          <View className="flex-row items-center gap-3">
-            <MapPin size={20} color="#FF9800" />
-            <View className="flex-1">
-              <Text className="text-sm font-bold color-slate-700">{doctor.doctor_clinic_name || 'Vedika Healthcare Clinic'}</Text>
-              <Text className="text-xs color-slate-500 mt-0.5">{doctor.doctor_clinic_address || 'Main Road, Health City'}</Text>
+              <Text style={styles.heroQualText}>
+                {doctor.doctor_qualification ?? 'MBBS, MD'}
+              </Text>
             </View>
           </View>
 
-          <View className="flex-row gap-2 mt-3.5">
+          {/* Floating Quick Action Contacts Bar */}
+          <View style={styles.quickActionBar}>
             <TouchableOpacity
-              className="flex-1 flex-row items-center justify-center bg-[#0284C7] py-2.5 rounded-xl gap-1.5"
+              style={[styles.quickActionTabBtn, activeTab === 'details' && styles.quickActionTabBtnActive]}
+              onPress={() => setActiveTab('details')}
+              activeOpacity={0.85}
+            >
+              <User size={15} color={activeTab === 'details' ? '#FFFFFF' : '#0E224A'} />
+              <Text style={[styles.quickActionTabText, activeTab === 'details' && styles.quickActionTabTextActive]}>
+                Details
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.quickActionTabBtn, activeTab === 'book' && styles.quickActionTabBtnActive]}
+              onPress={() => setActiveTab('book')}
+              activeOpacity={0.85}
+            >
+              <CalendarIcon size={15} color={activeTab === 'book' ? '#FFFFFF' : '#0E224A'} />
+              <Text style={[styles.quickActionTabText, activeTab === 'book' && styles.quickActionTabTextActive]}>
+                Book
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.quickIconCircleBtn}
               onPress={() => {
                 const phone = doctor.doctor_mobile || '+919876543210';
-                Linking.openURL(`tel:${phone}`).catch(() =>
-                  Alert.alert('Notice', `Call ${phone}`)
-                );
+                openExternalUrl(`tel:${phone}`, `Phone: ${phone}`);
               }}
             >
-              <Phone size={16} color="#FFF" />
-              <Text className="color-white font-bold text-xs">Call</Text>
+              <MaterialIcons name="call" size={18} color="#00A8B5" />
             </TouchableOpacity>
 
             <TouchableOpacity
-              className="flex-1 flex-row items-center justify-center bg-[#0F766E] py-2.5 rounded-xl gap-1.5"
-              onPress={() => {
-                const query = encodeURIComponent(
-                  `${doctor.doctor_clinic_name || ''} ${doctor.doctor_clinic_address || 'India'}`
-                );
-                Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`);
-              }}
+              style={styles.quickIconCircleBtn}
+              onPress={() =>
+                navigation.navigate('AskDoctor', {
+                  preselectedDoctorId: doctor.doctor_id,
+                  preselectedDoctorName: doctor.doctor_name,
+                })
+              }
             >
-              <NavigationIcon size={16} color="#FFF" />
-              <Text className="color-white font-bold text-xs">Directions</Text>
+              <MaterialIcons name="chat" size={18} color="#00A8B5" />
             </TouchableOpacity>
 
             <TouchableOpacity
-              className="flex-1 flex-row items-center justify-center bg-[#25D366] py-2.5 rounded-xl gap-1.5"
+              style={styles.quickIconCircleBtn}
               onPress={() => {
                 const phone = (doctor.doctor_mobile || '919876543210').replace(/\D/g, '');
-                const msg = encodeURIComponent(
-                  `Hello Dr. ${doctor.doctor_name}, I would like to inquire about consultation slots.`
-                );
-                Linking.openURL(`whatsapp://send?phone=${phone}&text=${msg}`).catch(() =>
-                  Linking.openURL(`https://api.whatsapp.com/send?phone=${phone}&text=${msg}`)
-                );
+                const msg = encodeURIComponent(`Hello Dr. ${doctor.doctor_name}, inquiring about consultation.`);
+                openExternalUrl(`whatsapp://send?phone=${phone}&text=${msg}`, `WhatsApp: ${phone}`);
               }}
             >
-              <MessageCircle size={16} color="#FFF" />
-              <Text className="color-white font-bold text-xs">WhatsApp</Text>
+              <MaterialCommunityIcons name="whatsapp" size={20} color="#25D366" />
             </TouchableOpacity>
+          </View>
+
+          {/* 3-Column Floating Quick Stats Card */}
+          <View style={styles.floatingStatsCard}>
+            <View style={styles.statColItem}>
+              <Clock size={20} color="#00A8B5" />
+              <Text style={styles.statColValue}>{doctor.doctor_experience ?? 5}+ Yrs</Text>
+              <Text style={styles.statColLabel}>Experience</Text>
+            </View>
+
+            <View style={styles.statColDivider} />
+
+            <View style={styles.statColItem}>
+              <Users size={20} color="#00A8B5" />
+              <Text style={styles.statColValue}>
+                {doctor.doctor_patients_treated !== undefined && doctor.doctor_patients_treated !== null
+                  ? `${doctor.doctor_patients_treated}+`
+                  : '1,000+'}
+              </Text>
+              <Text style={styles.statColLabel}>Patients</Text>
+            </View>
+
+            <View style={styles.statColDivider} />
+
+            <View style={styles.statColItem}>
+              <Star size={20} color="#D97706" fill="#D97706" />
+              <Text style={styles.statColValue}>
+                {doctor.doctor_reviews_count !== undefined && doctor.doctor_reviews_count !== null
+                  ? `${doctor.doctor_reviews_count}+`
+                  : '120+'}
+              </Text>
+              <Text style={styles.statColLabel}>Reviews</Text>
+            </View>
           </View>
         </View>
 
-        <Text className="text-base font-bold color-slate-800 mb-2 mt-1">Select Date</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.calendarScroll}>
-          {dates.map((date, idx) => {
-            const isSelected = getISODateString(date) === getISODateString(selectedDate);
-            return (
-              <TouchableOpacity
-                key={idx}
-                style={[styles.dateCard, isSelected && styles.dateCardActive]}
-                onPress={() => setSelectedDate(date)}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.dayLabel, isSelected && styles.dateLabelActive]}>
-                  {formatDateLabel(date).split(' ')[0]}
-                </Text>
-                <Text style={[styles.dateLabel, isSelected && styles.dateLabelActive]}>
-                  {formatDateLabel(date).split(' ')[1]}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+        {/* BOTTOM CURVED SHEET CONTAINER */}
+        <View
+          style={[
+            styles.curvedSheetContainer,
+            { paddingBottom: activeTab === 'book' ? insets.bottom + 90 : insets.bottom + 24 },
+          ]}
+        >
+          {/* Top Drag Handle */}
+          <View style={styles.sheetHandleBar} />
 
-        <Text className="text-base font-bold color-slate-800 mb-2 mt-1">Available Time Slots</Text>
-        {isSlotsLoading ? (
-          <View style={styles.loadingSlots}>
-            <ActivityIndicator size="small" color="#0F525D" />
-            <Text style={styles.loadingText}>Fetching slots...</Text>
-          </View>
-        ) : (
-          <View style={styles.slotsGrid}>
-            {AVAILABLE_SLOTS.map((slot) => {
-              const isBooked = bookedSlots.includes(slot);
-              const isSelected = selectedSlot === slot;
+          {/* TAB 1: DOCTOR OVERVIEW & CLINIC DETAILS */}
+          {activeTab === 'details' && (
+            <View>
+              {/* About Doctor Section */}
+              <View style={styles.sectionBlock}>
+                <Text style={styles.sectionBlockHeading}>About Doctor</Text>
 
-              return (
+                <View style={styles.quoteCalloutBox}>
+                  <Quote size={18} color="#00A8B5" style={{ marginRight: 6, marginTop: 1 }} />
+                  <Text style={styles.quoteCalloutText}>
+                    {doctor.doctor_quote
+                      ? `"${doctor.doctor_quote.replace(/['"]+/g, '')}"`
+                      : '"Your health is your greatest wealth. My mission is to deliver comprehensive, compassionate, and personalized care."'}
+                  </Text>
+                </View>
+
+                <Text style={styles.bioTextParagraph}>
+                  {doctor.doctor_description ||
+                    `Dr. ${doctor.doctor_name} is a highly accomplished ${doctor.doctor_specialization ?? 'Specialist'} with extensive training in diagnosing and managing complex medical conditions.`}
+                </Text>
+
+                <View style={styles.horizontalDivider} />
+
+                <View style={styles.languagesGroup}>
+                  <Text style={styles.languagesTitle}>Languages Spoken:</Text>
+                  <View style={styles.languagePillContainer}>
+                    {parsedLanguages.map((lang, idx) => (
+                      <View key={idx} style={styles.langPillBadge}>
+                        <Text style={styles.langPillText}>{lang}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+
                 <TouchableOpacity
-                  key={slot}
-                  disabled={isBooked}
-                  style={[
-                    styles.slotButton,
-                    isSelected && styles.slotButtonActive,
-                    isBooked && styles.slotButtonDisabled,
-                  ]}
-                  onPress={() => setSelectedSlot(slot)}
+                  style={styles.askQuestionDirectBtn}
                   activeOpacity={0.8}
+                  onPress={() =>
+                    navigation.navigate('AskDoctor', {
+                      preselectedDoctorId: doctor.doctor_id,
+                      preselectedDoctorName: doctor.doctor_name,
+                    })
+                  }
                 >
-                  <Text
-                    style={[
-                      styles.slotText,
-                      isSelected && styles.slotTextActive,
-                      isBooked && styles.slotTextDisabled,
-                    ]}
-                  >
-                    {slot}
+                  <MaterialIcons name="chat" size={18} color="#00A8B5" />
+                  <Text style={styles.askQuestionDirectText}>
+                    Ask Dr. {doctor.doctor_name.split(' ')[0]} a Question
                   </Text>
                 </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
+              </View>
 
-        <Text className="text-base font-bold color-slate-800 mb-2 mt-1">Reason for Visit (Optional)</Text>
-        <TextInput
-          style={styles.reasonInput}
-          multiline
-          numberOfLines={3}
-          placeholder="Describe your health issue, symptoms, or check-up needs..."
-          placeholderTextColor="#94A3B8"
-          value={reason}
-          onChangeText={setReason}
-        />
+              {/* Clinic Location & Directions Section */}
+              <View style={styles.sectionBlock}>
+                <Text style={styles.sectionBlockHeading}>Clinic & Directions</Text>
 
-        <View style={styles.actionSection}>
-          <PrimaryButton
-            title="Book Appointment"
-            onPress={handleBookAppointment}
-            isLoading={isBookingLoading}
-          />
+                <View style={styles.clinicCardContent}>
+                  <View style={styles.clinicIconCircle}>
+                    <MaterialIcons name="location-on" size={22} color="#FF9800" />
+                  </View>
+                  <View style={styles.clinicTextContent}>
+                    <Text style={styles.clinicMainName}>
+                      {doctor.doctor_clinic_name || 'Vedika Healthcare Clinic'}
+                    </Text>
+                    <Text style={styles.clinicMainAddr}>
+                      {doctor.doctor_clinic_address || 'Main Road, Health City'}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.clinicActionRow}>
+                  <TouchableOpacity
+                    style={[styles.clinicActionBtn, { backgroundColor: '#0284C7' }]}
+                    onPress={() => {
+                      const phone = doctor.doctor_mobile || '+919876543210';
+                      openExternalUrl(`tel:${phone}`, `Phone: ${phone}`);
+                    }}
+                  >
+                    <MaterialIcons name="call" size={16} color="#FFFFFF" />
+                    <Text style={styles.clinicActionBtnText}>Call Clinic</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.clinicActionBtn, { backgroundColor: '#0F766E' }]}
+                    onPress={() => {
+                      const query = encodeURIComponent(
+                        `${doctor.doctor_clinic_name || ''} ${doctor.doctor_clinic_address || 'India'}`
+                      );
+                      openExternalUrl(`https://www.google.com/maps/search/?api=1&query=${query}`, 'Maps link unavailable.');
+                    }}
+                  >
+                    <MaterialIcons name="directions" size={16} color="#FFFFFF" />
+                    <Text style={styles.clinicActionBtnText}>Get Directions</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Direct CTA to Jump to Booking */}
+              <View style={{ marginTop: 10 }}>
+                <PrimaryButton
+                  title="Proceed to Book Appointment"
+                  onPress={() => setActiveTab('book')}
+                />
+              </View>
+            </View>
+          )}
+
+          {/* TAB 2: BOOK APPOINTMENT */}
+          {activeTab === 'book' && (
+            <View>
+              {/* Select Date Header & Month Selector */}
+              <View style={styles.bookingSectionHeader}>
+                <Text style={styles.bookingSectionTitle}>Select Date</Text>
+                <View style={styles.monthSelectorPill}>
+                  <Text style={styles.monthSelectorText}>{currentMonthName}</Text>
+                </View>
+              </View>
+
+              {/* Horizontal Date Capsules */}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.dateCapsuleScrollContainer}
+              >
+                {dates.map((date, idx) => {
+                  const isSelected = getISODateString(date) === getISODateString(selectedDate);
+                  const [dayName, dateNum] = formatDateLabel(date).split(' ');
+                  return (
+                    <TouchableOpacity
+                      key={idx}
+                      style={[styles.dateCapsuleCard, isSelected && styles.dateCapsuleCardActive]}
+                      onPress={() => setSelectedDate(date)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.capsuleDayName, isSelected && styles.capsuleDayNameActive]}>
+                        {dayName}
+                      </Text>
+                      <Text style={[styles.capsuleDateNum, isSelected && styles.capsuleDateNumActive]}>
+                        {dateNum}
+                      </Text>
+                      {isSelected && <View style={styles.capsuleActiveDot} />}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+
+              {/* Select Time Slot Header */}
+              <View style={styles.bookingSectionHeader}>
+                <Text style={styles.bookingSectionTitle}>Select Time Slot</Text>
+                {selectedSlot && (
+                  <View style={styles.selectedSlotPillBadge}>
+                    <CheckCircle2 size={12} color="#00838F" />
+                    <Text style={styles.selectedSlotPillBadgeText}>{selectedSlot}</Text>
+                  </View>
+                )}
+              </View>
+
+              {/* 3-Column Time Slot Grid */}
+              {isSlotsLoading ? (
+                <View style={styles.slotLoadingBox}>
+                  <ActivityIndicator size="small" color="#00A8B5" />
+                  <Text style={styles.slotLoadingText}>Fetching live available slots...</Text>
+                </View>
+              ) : (
+                <View style={styles.timeSlotGridContainer}>
+                  {AVAILABLE_SLOTS.map((slot) => {
+                    const isBooked = bookedSlots.includes(slot);
+                    const isSelected = selectedSlot === slot;
+
+                    return (
+                      <TouchableOpacity
+                        key={slot}
+                        disabled={isBooked}
+                        style={[
+                          styles.slotButtonPill,
+                          isSelected && styles.slotButtonPillActive,
+                          isBooked && styles.slotButtonPillDisabled,
+                        ]}
+                        onPress={() => setSelectedSlot(slot)}
+                        activeOpacity={0.8}
+                      >
+                        <Clock
+                          size={13}
+                          color={isSelected ? '#FFFFFF' : isBooked ? '#CBD5E1' : '#64748B'}
+                          style={{ marginRight: 4 }}
+                        />
+                        <Text
+                          style={[
+                            styles.slotButtonPillText,
+                            isSelected && styles.slotButtonPillTextActive,
+                            isBooked && styles.slotButtonPillTextDisabled,
+                          ]}
+                        >
+                          {slot}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+
+              {/* Reason for Visit Optional Text Box */}
+              <Text style={styles.bookingSectionTitle}>Reason for Visit (Optional)</Text>
+              <TextInput
+                style={styles.reasonInputContainer}
+                multiline
+                numberOfLines={3}
+                placeholder="Describe your health issue, symptoms, or check-up needs..."
+                placeholderTextColor="#94A3B8"
+                value={reason}
+                onChangeText={setReason}
+                maxLength={500}
+              />
+            </View>
+          )}
         </View>
       </ScrollView>
 
+      {/* Sticky Bottom Floating Action Bar for Book Tab */}
+      {activeTab === 'book' && (
+        <View style={[styles.stickyBottomBarContainer, { paddingBottom: Math.max(insets.bottom, 14) }]}>
+          <View style={styles.stickyBottomBarContent}>
+            <View style={styles.bottomFeeInfoGroup}>
+              <Text style={styles.bottomFeeTitle}>Consultation Fee</Text>
+              <Text style={styles.bottomFeeAmount}>₹{doctor.doctor_consultation_fee ?? 500}</Text>
+            </View>
+
+            <View style={styles.bottomCtaButtonBox}>
+              <PrimaryButton
+                title={selectedSlot ? `Book Session (${selectedSlot})` : 'Book Session'}
+                onPress={handleBookAppointment}
+                isLoading={isBookingLoading}
+              />
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* Confirmation Modal */}
       <Modal
         visible={showConfirmModal}
         transparent
@@ -460,49 +648,70 @@ export function DoctorProfileScreen() {
         onRequestClose={() => setShowConfirmModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Confirm Appointment</Text>
-              <TouchableOpacity onPress={() => setShowConfirmModal(false)}>
-                <X size={22} color={theme.colors.textPrimary} />
+          <View style={styles.modalContentCard}>
+            <View style={styles.modalHeaderRow}>
+              <Text style={styles.modalHeadingText}>Confirm Appointment</Text>
+              <TouchableOpacity
+                style={styles.modalCloseCircleBtn}
+                onPress={() => setShowConfirmModal(false)}
+              >
+                <X size={20} color="#1E293B" />
               </TouchableOpacity>
             </View>
 
-            <View style={styles.modalDetails}>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Doctor</Text>
-                <Text style={styles.detailValue}>Dr. {doctor.doctor_name}</Text>
+            <View style={styles.modalSummaryBox}>
+              <View style={styles.modalRowItem}>
+                <Text style={styles.modalRowLabel}>Doctor</Text>
+                <Text style={styles.modalRowValue}>Dr. {doctor.doctor_name}</Text>
               </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Date</Text>
-                <Text style={styles.detailValue}>
-                  {selectedDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+
+              <View style={styles.modalRowItem}>
+                <Text style={styles.modalRowLabel}>Specialization</Text>
+                <Text style={styles.modalRowValue}>
+                  {doctor.doctor_specialization ?? 'General Physician'}
                 </Text>
               </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Time Slot</Text>
-                <Text style={styles.detailValue}>{selectedSlot}</Text>
+
+              <View style={styles.modalRowItem}>
+                <Text style={styles.modalRowLabel}>Date</Text>
+                <Text style={styles.modalRowValue}>
+                  {selectedDate.toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                </Text>
               </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Consultation Fee</Text>
-                <Text style={[styles.detailValue, { color: '#0F525D', fontWeight: '700' }]}>
+
+              <View style={styles.modalRowItem}>
+                <Text style={styles.modalRowLabel}>Time Slot</Text>
+                <Text style={[styles.modalRowValue, { color: '#00A8B5', fontWeight: '700' }]}>
+                  {selectedSlot}
+                </Text>
+              </View>
+
+              <View style={styles.modalRowItem}>
+                <Text style={styles.modalRowLabel}>Consultation Fee</Text>
+                <Text style={[styles.modalRowValue, { color: '#00A8B5', fontWeight: '700' }]}>
                   ₹{doctor.doctor_consultation_fee ?? 500}
                 </Text>
               </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Payment Method</Text>
-                <Text style={[styles.detailValue, { color: '#FF9800', fontWeight: '600' }]}>
-                  Pay at Clinic
-                </Text>
+
+              <View style={styles.modalRowItem}>
+                <Text style={styles.modalRowLabel}>Payment Method</Text>
+                <View style={styles.payAtClinicBadgeTag}>
+                  <Text style={styles.payAtClinicTagText}>Pay at Clinic</Text>
+                </View>
               </View>
             </View>
 
-            <Text style={styles.modalDisclaimer}>
+            <Text style={styles.modalDisclaimerText}>
               * No online payment required now. You can settle the consultation fee directly at the clinic reception.
             </Text>
 
-            <View style={styles.modalAction}>
-              <PrimaryButton title="Confirm Booking" onPress={confirmBooking} />
+            <View style={{ marginBottom: 6 }}>
+              <PrimaryButton title="Confirm Booking" onPress={confirmBooking} isLoading={isBookingLoading} />
             </View>
           </View>
         </View>
@@ -516,212 +725,332 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8FAFC',
   },
-  header: {
+
+  /* Top Hero Section */
+  heroSectionBackground: {
+    backgroundColor: '#E0F7FA',
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 24,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+  },
+  topNavRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    backgroundColor: '#FFFFFF',
+    marginBottom: 16,
   },
-  backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FFFFFF',
+  glassHeaderBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: 'rgba(255, 255, 255, 0.9)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  headerTitle: {
-    fontSize: 18,
+  glassHeaderTitleBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.9)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  glassHeaderTitleText: {
+    fontSize: 16,
     fontWeight: '700',
-    color: '#0E2229',
+    color: '#0E224A',
   },
-  favButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  scrollContent: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.md,
-  },
-  doctorInfoCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: theme.radius.lg,
-    padding: theme.spacing.md,
+
+  /* Hero Profile Info */
+  heroProfileRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
-    marginBottom: theme.spacing.md,
-    ...theme.shadow.card,
+    marginBottom: 18,
   },
-  avatarWrapper: {
+  heroAvatarWrapper: {
     position: 'relative',
-    marginRight: theme.spacing.lg,
+    marginRight: 16,
   },
-  avatarImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#F1F5F9',
+  heroAvatarImg: {
+    width: 86,
+    height: 86,
+    borderRadius: 43,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
   },
-  avatarFallback: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: theme.colors.primary,
+  heroAvatarInitials: {
+    width: 86,
+    height: 86,
+    borderRadius: 43,
+    backgroundColor: '#00A8B5',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
   },
-  avatarFallbackText: {
+  heroInitialsText: {
     color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 24,
+    fontWeight: '800',
+    fontSize: 28,
   },
-  activeIndicator: {
+  heroOnlineBadge: {
     position: 'absolute',
-    bottom: 2,
-    right: 2,
+    bottom: 4,
+    right: 4,
     width: 14,
     height: 14,
     borderRadius: 7,
     backgroundColor: '#22C55E',
-    borderWidth: 2,
+    borderWidth: 2.5,
     borderColor: '#FFFFFF',
   },
-  infoCol: {
+  heroTextCol: {
     flex: 1,
   },
-  nameRow: {
+  ratingGlassBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+    gap: 4,
+    marginBottom: 4,
+  },
+  ratingBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#1E293B',
+  },
+  reviewsBadgeText: {
+    fontSize: 10.5,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  heroNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 2,
   },
-  doctorName: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1E293B',
+  heroNameText: {
+    fontSize: 19,
+    fontWeight: '800',
+    color: '#0E224A',
     maxWidth: '85%',
   },
-  verifiedIcon: {
-    marginLeft: 4,
-  },
-  docSpecialization: {
+  heroSpecText: {
     fontSize: 13,
-    color: '#00BCD4',
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  docQualification: {
-    fontSize: 12,
-    color: '#64748B',
-    marginBottom: theme.spacing.xs,
-  },
-  feeBadge: {
-    backgroundColor: '#E0F7FA',
-    borderRadius: theme.radius.sm,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    alignSelf: 'flex-start',
-    marginTop: 4,
-  },
-  feeText: {
-    fontSize: 12,
     fontWeight: '700',
     color: '#00A8B5',
+    marginBottom: 2,
   },
-  highlightsContainer: {
+  heroQualText: {
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+
+  /* Floating Quick Action Contacts Bar */
+  quickActionBar: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: theme.spacing.md,
-    gap: theme.spacing.sm,
-  },
-  highlightItem: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: theme.radius.md,
-    paddingVertical: theme.spacing.md,
     alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 6,
+    marginBottom: 14,
     borderWidth: 1,
     borderColor: '#F1F5F9',
-    ...theme.shadow.card,
+    shadowColor: '#64748B',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
   },
-  highlightIconBg: {
+  quickActionTabBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 14,
+    gap: 5,
+  },
+  quickActionTabBtnActive: {
+    backgroundColor: '#00A8B5',
+  },
+  quickActionTabText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#0E224A',
+  },
+  quickActionTabTextActive: {
+    color: '#FFFFFF',
+  },
+  quickIconCircleBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
+    backgroundColor: '#F8FAFC',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
-  highlightVal: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1E293B',
-    marginBottom: 2,
+
+  /* 3-Column Floating Quick Stats Card */
+  floatingStatsCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    shadowColor: '#64748B',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 3,
   },
-  highlightLbl: {
-    fontSize: 10,
+  statColItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statColValue: {
+    fontSize: 13.5,
+    fontWeight: '800',
+    color: '#0E224A',
+    marginTop: 4,
+    marginBottom: 1,
+  },
+  statColLabel: {
+    fontSize: 10.5,
     color: '#64748B',
     fontWeight: '600',
   },
-  quoteBanner: {
+  statColDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: '#F1F5F9',
+  },
+
+  /* Curved Bottom Sheet Container */
+  curvedSheetContainer: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    marginTop: -10,
+    shadowColor: '#64748B',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  sheetHandleBar: {
+    width: 44,
+    height: 4,
+    backgroundColor: '#E2E8F0',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+
+  /* Section Blocks in Tab 1 */
+  sectionBlock: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    marginBottom: 14,
+    shadowColor: '#64748B',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  sectionBlockHeading: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0E224A',
+    marginBottom: 10,
+  },
+  quoteCalloutBox: {
     flexDirection: 'row',
     backgroundColor: '#F0FDF4',
-    padding: theme.spacing.md,
-    borderRadius: theme.radius.md,
-    borderLeftWidth: 3,
+    padding: 12,
+    borderRadius: 14,
+    borderLeftWidth: 3.5,
     borderLeftColor: '#00A8B5',
-    marginBottom: theme.spacing.md,
+    marginBottom: 12,
     alignItems: 'flex-start',
   },
-  quoteIcon: {
-    marginRight: 6,
-    marginTop: -2,
-  },
-  quoteText: {
+  quoteCalloutText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 12.5,
     color: '#1B4332',
     fontStyle: 'italic',
     lineHeight: 18,
   },
-  descriptionParagraph: {
-    fontSize: 13,
+  bioTextParagraph: {
+    fontSize: 12.5,
     color: '#475569',
     lineHeight: 20,
-    marginBottom: theme.spacing.md,
+    marginBottom: 12,
   },
-  divider: {
+  horizontalDivider: {
     height: 1,
     backgroundColor: '#F1F5F9',
-    marginBottom: theme.spacing.md,
+    marginBottom: 12,
   },
-  metaInfoRow: {
+  languagesGroup: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 8,
   },
-  metaInfoLbl: {
-    fontSize: 13,
+  languagesTitle: {
+    fontSize: 12.5,
     fontWeight: '700',
     color: '#334155',
   },
-  metaInfoVal: {
-    fontSize: 13,
-    color: '#00A8B5',
-    fontWeight: '600',
+  languagePillContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  langPillBadge: {
+    backgroundColor: '#E0F7FA',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  langPillText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#00838F',
   },
   askQuestionDirectBtn: {
     flexDirection: 'row',
@@ -731,193 +1060,339 @@ const styles = StyleSheet.create({
     backgroundColor: '#E0F2F1',
     borderWidth: 1,
     borderColor: '#B2DFDB',
-    borderRadius: 8,
-    paddingVertical: 10,
-    marginTop: theme.spacing.md,
+    borderRadius: 12,
+    paddingVertical: 11,
+    marginTop: 14,
   },
-  askQuestionDirectBtnText: {
+  askQuestionDirectText: {
     fontSize: 13,
     fontWeight: '700',
     color: '#00A8B5',
   },
-  cardContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: theme.radius.lg,
-    padding: theme.spacing.md,
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
-    marginBottom: theme.spacing.md,
-    ...theme.shadow.card,
-  },
-  sectionHeading: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1E293B',
-    marginBottom: theme.spacing.sm,
-    marginTop: theme.spacing.xs,
-  },
-  clinicDetails: {
+
+  /* Clinic Section */
+  clinicCardContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.sm,
+    gap: 12,
   },
-  clinicTextGroup: {
+  clinicIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFF7ED',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clinicTextContent: {
     flex: 1,
   },
-  clinicName: {
+  clinicMainName: {
     fontSize: 14,
     fontWeight: '700',
     color: '#334155',
   },
-  clinicAddress: {
+  clinicMainAddr: {
     fontSize: 12,
     color: '#64748B',
     marginTop: 2,
   },
-  calendarScroll: {
-    paddingBottom: theme.spacing.sm,
-    gap: theme.spacing.sm,
+  clinicActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 14,
   },
-  dateCard: {
-    width: 60,
-    height: 70,
-    backgroundColor: '#FFFFFF',
-    borderRadius: theme.radius.md,
+  clinicActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 12,
+    gap: 6,
+  },
+  clinicActionBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 12,
+  },
+
+  /* TAB 2: BOOK APPOINTMENT STYLES */
+  bookingSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    marginTop: 6,
+  },
+  bookingSectionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0E224A',
+  },
+  monthSelectorPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  monthSelectorText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0E224A',
+  },
+  dateCapsuleScrollContainer: {
+    paddingBottom: 16,
+    gap: 12,
+  },
+  dateCapsuleCard: {
+    width: 64,
+    height: 78,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    ...theme.shadow.card,
+    position: 'relative',
+    shadowColor: '#64748B',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
-  dateCardActive: {
-    backgroundColor: '#0F525D',
-    borderColor: '#0F525D',
+  dateCapsuleCardActive: {
+    backgroundColor: '#00A8B5',
+    borderColor: '#00A8B5',
+    shadowColor: '#00A8B5',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
   },
-  dayLabel: {
+  capsuleDayName: {
     fontSize: 12,
     color: '#64748B',
-    marginBottom: 4,
+    fontWeight: '600',
+    marginBottom: 2,
   },
-  dateLabel: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1E293B',
+  capsuleDayNameActive: {
+    color: '#E0F7FA',
   },
-  dateLabelActive: {
+  capsuleDateNum: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0E224A',
+  },
+  capsuleDateNumActive: {
     color: '#FFFFFF',
   },
-  loadingSlots: {
+  capsuleActiveDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: '#FFFFFF',
+    position: 'absolute',
+    bottom: 6,
+  },
+
+  /* Time Slots Grid */
+  selectedSlotPillBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#E0F7FA',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  selectedSlotPillBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#00838F',
+  },
+  slotLoadingBox: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: theme.spacing.sm,
-    paddingVertical: theme.spacing.md,
+    gap: 8,
+    paddingVertical: 20,
   },
-  loadingText: {
+  slotLoadingText: {
     fontSize: 13,
     color: '#64748B',
   },
-  slotsGrid: {
+  timeSlotGridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: theme.spacing.sm,
-    marginBottom: theme.spacing.md,
+    gap: 8,
+    marginBottom: 16,
   },
-  slotButton: {
-    width: '31%',
-    paddingVertical: 10,
+  slotButtonPill: {
+    width: '31.5%',
+    paddingVertical: 11,
     backgroundColor: '#FFFFFF',
-    borderRadius: theme.radius.md,
+    borderRadius: 12,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
-  slotButtonActive: {
-    backgroundColor: '#0F525D',
-    borderColor: '#0F525D',
+  slotButtonPillActive: {
+    backgroundColor: '#00A8B5',
+    borderColor: '#00A8B5',
+    shadowColor: '#00A8B5',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  slotButtonDisabled: {
+  slotButtonPillDisabled: {
     backgroundColor: '#F1F5F9',
     borderColor: '#E2E8F0',
     opacity: 0.5,
   },
-  slotText: {
-    fontSize: 13,
+  slotButtonPillText: {
+    fontSize: 12,
     fontWeight: '600',
     color: '#334155',
   },
-  slotTextActive: {
+  slotButtonPillTextActive: {
     color: '#FFFFFF',
     fontWeight: '700',
   },
-  slotTextDisabled: {
+  slotButtonPillTextDisabled: {
     color: '#94A3B8',
     textDecorationLine: 'line-through',
   },
-  reasonInput: {
+
+  /* Reason Box */
+  reasonInputContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: theme.radius.md,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    padding: theme.spacing.md,
-    fontSize: 14,
-    color: theme.colors.textPrimary,
+    padding: 14,
+    fontSize: 13,
+    color: '#1E293B',
     textAlignVertical: 'top',
-    marginBottom: theme.spacing.lg,
+    marginTop: 8,
+    marginBottom: 14,
   },
-  actionSection: {
-    marginTop: theme.spacing.xs,
+
+  /* Sticky Bottom Bar */
+  stickyBottomBarContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 10,
   },
+  stickyBottomBarContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 16,
+  },
+  bottomFeeInfoGroup: {
+    justifyContent: 'center',
+  },
+  bottomFeeTitle: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  bottomFeeAmount: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#00A8B5',
+  },
+  bottomCtaButtonBox: {
+    flex: 1,
+  },
+
+  /* Modal */
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
     justifyContent: 'flex-end',
   },
-  modalContent: {
+  modalContentCard: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: theme.radius.lg,
-    borderTopRightRadius: theme.radius.lg,
-    padding: theme.spacing.lg,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
   },
-  modalHeader: {
+  modalHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: theme.spacing.md,
+    marginBottom: 16,
   },
-  modalTitle: {
+  modalHeadingText: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#0E2229',
+    color: '#0E224A',
   },
-  modalDetails: {
+  modalCloseCircleBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalSummaryBox: {
     backgroundColor: '#F8FAFC',
-    borderRadius: theme.radius.md,
-    padding: theme.spacing.md,
-    gap: theme.spacing.sm,
-    marginBottom: theme.spacing.md,
+    borderRadius: 16,
+    padding: 16,
+    gap: 12,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
   },
-  detailRow: {
+  modalRowItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  detailLabel: {
+  modalRowLabel: {
     fontSize: 13,
     color: '#64748B',
   },
-  detailValue: {
+  modalRowValue: {
     fontSize: 13,
     fontWeight: '600',
     color: '#1E293B',
   },
-  modalDisclaimer: {
+  payAtClinicBadgeTag: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  payAtClinicTagText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#D97706',
+  },
+  modalDisclaimerText: {
     fontSize: 12,
     color: '#64748B',
     fontStyle: 'italic',
-    marginBottom: theme.spacing.lg,
-  },
-  modalAction: {
-    marginBottom: theme.spacing.sm,
+    marginBottom: 18,
   },
 });

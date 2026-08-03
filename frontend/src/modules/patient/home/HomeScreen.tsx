@@ -178,54 +178,182 @@ export function HomeScreen() {
 
       {/* Quick Booking Banner */}
       <QuickBookingBanner onBookNow={() => (navigation as any).navigate('Discover')} />
-
-      {/* Grid Features - 6 Cards matching Previous HomeScreen UI */}
-      <View className="mb-6 gap-3">
-        {/* Row 1 */}
-        <View className="flex-row justify-between gap-3">
-          <TouchableOpacity className="flex-1 bg-white rounded-2xl py-4 px-1 items-center border border-slate-100 shadow-sm" activeOpacity={0.85} onPress={() => (navigation as any).navigate('Discover')}>
-            <View className="w-14 h-14 rounded-full bg-[#E0F7FA] items-center justify-center mb-2 overflow-hidden">
-              <Image source={assets.images.findDoctor} style={{ width: 56, height: 56 }} contentFit="cover" />
+      
+      {/* Custom Bento Grid Layout (Uniform Compact Height matching Row 3) */}
+      <View style={{ marginBottom: 18, gap: 10 }}>
+        {/* ROW 1: Find Doctors (Wide 62%) + Educational Videos (Square 38%) */}
+        <View style={{ flexDirection: 'row', gap: 10, height: 82 }}>
+          {/* Card 1: Find Doctors (Wide Card) */}
+          <TouchableOpacity
+            style={{
+              flex: 1.6,
+              backgroundColor: '#E3F6F5',
+              borderRadius: 20,
+              paddingLeft: 10,
+              paddingRight: 12,
+              paddingVertical: 8,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              overflow: 'hidden',
+              position: 'relative',
+            }}
+            activeOpacity={0.88}
+            onPress={() => (navigation as any).navigate('Discover')}
+          >
+            <Image
+              source={assets.bento.findDoctor}
+              style={{ width: 75, height: 82, position: 'absolute', left: 0, bottom: 0 }}
+              contentFit="cover"
+              contentPosition="bottom left"
+            />
+            <View style={{ flex: 1, marginLeft: 68, justifyContent: 'center' }}>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: '#0E224A', lineHeight: 17 }}>
+                Find Doctors
+              </Text>
+              <Text style={{ fontSize: 10, color: '#457A7C', fontWeight: '500', marginTop: 1, lineHeight: 13 }}>
+                Consult specialists
+              </Text>
             </View>
-            <Text className="text-xs font-semibold color-[#0F224A] text-center" numberOfLines={1}>Find Doctors</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity className="flex-1 bg-white rounded-2xl py-4 px-1 items-center border border-slate-100 shadow-sm" activeOpacity={0.85} onPress={() => comingSoon('Video Consult')}>
-            <View className="w-14 h-14 rounded-full bg-[#E3F2FD] items-center justify-center mb-2">
-              <Video size={24} color="#2196F3" />
-            </View>
-            <Text className="text-xs font-semibold color-[#0F224A] text-center" numberOfLines={1}>Video Consult</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity className="flex-1 bg-white rounded-2xl py-4 px-1 items-center border border-slate-100 shadow-sm" activeOpacity={0.85} onPress={() => comingSoon('Health Records')}>
-            <View className="w-14 h-14 rounded-full bg-[#E8EAF6] items-center justify-center mb-2">
-              <FileText size={24} color="#3F51B5" />
-            </View>
-            <Text className="text-xs font-semibold color-[#0F224A] text-center" numberOfLines={1}>Health Records</Text>
+          {/* Card 2: Educational Videos (Square Card) */}
+          <TouchableOpacity
+            style={{
+              flex: 1,
+              backgroundColor: '#EAF2FF',
+              borderRadius: 20,
+              paddingHorizontal: 6,
+              paddingVertical: 4,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+            }}
+            activeOpacity={0.88}
+            onPress={() => (navigation as any).navigate('Video')}
+          >
+            <Image
+              source={assets.bento.educationalVideos}
+              style={{ width: 66, height: 66 }}
+              contentFit="contain"
+            />
+            <Text style={{ fontSize: 11, fontWeight: '800', color: '#0E224A', marginLeft: 2, flexShrink: 1, lineHeight: 14 }}>
+              Educational{'\n'}Videos
+            </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Row 2 */}
-        <View className="flex-row justify-between gap-3">
-          <TouchableOpacity className="flex-1 bg-white rounded-2xl py-4 px-1 items-center border border-slate-100 shadow-sm" activeOpacity={0.85} onPress={() => comingSoon('Prescriptions')}>
-            <View className="w-14 h-14 rounded-full bg-[#E8F5E9] items-center justify-center mb-2">
-              <Pill size={24} color="#4CAF50" />
-            </View>
-            <Text className="text-xs font-semibold color-[#0F224A] text-center" numberOfLines={1}>Prescriptions</Text>
+        {/* ROW 2: Health Records (Square 38%) + Prescriptions (Wide 62%) */}
+        <View style={{ flexDirection: 'row', gap: 10, height: 82 }}>
+          {/* Card 3: Health Records (Square Card) */}
+          <TouchableOpacity
+            style={{
+              flex: 1,
+              backgroundColor: '#EEEEFF',
+              borderRadius: 20,
+              paddingHorizontal: 6,
+              paddingVertical: 4,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+            }}
+            activeOpacity={0.88}
+            onPress={() => comingSoon('Health Records')}
+          >
+            <Image
+              source={assets.bento.healthRecords}
+              style={{ width: 66, height: 66 }}
+              contentFit="contain"
+            />
+            <Text style={{ fontSize: 11, fontWeight: '800', color: '#0E224A', marginLeft: 2, flexShrink: 1, lineHeight: 14 }}>
+              Health{'\n'}Records
+            </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity className="flex-1 bg-white rounded-2xl py-4 px-1 items-center border border-slate-100 shadow-sm" activeOpacity={0.85} onPress={() => comingSoon('Reminders')}>
-            <View className="w-14 h-14 rounded-full bg-[#FFF3E0] items-center justify-center mb-2">
-              <Bell size={24} color="#FF9800" />
+          {/* Card 4: Prescriptions (Wide Card) */}
+          <TouchableOpacity
+            style={{
+              flex: 1.6,
+              backgroundColor: '#EAF6EC',
+              borderRadius: 20,
+              paddingLeft: 8,
+              paddingRight: 10,
+              paddingVertical: 6,
+              flexDirection: 'row',
+              alignItems: 'center',
+              overflow: 'hidden',
+            }}
+            activeOpacity={0.88}
+            onPress={() => comingSoon('Prescriptions')}
+          >
+            <Image
+              source={assets.bento.prescriptions}
+              style={{ width: 68, height: 68, marginRight: 6 }}
+              contentFit="contain"
+            />
+            <View style={{ flex: 1, justifyContent: 'center' }}>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: '#1B5E20', lineHeight: 17 }}>
+                Prescriptions
+              </Text>
+              <Text style={{ fontSize: 10, color: '#3A7A42', fontWeight: '500', marginTop: 1, lineHeight: 13 }}>
+                Digital Rx
+              </Text>
             </View>
-            <Text className="text-xs font-semibold color-[#0F224A] text-center" numberOfLines={1}>Reminders</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ROW 3: Reminders (Half 50%) + Ask a Doctor (Half 50%) */}
+        <View style={{ flexDirection: 'row', gap: 10, height: 82 }}>
+          {/* Card 5: Reminders */}
+          <TouchableOpacity
+            style={{
+              flex: 1,
+              backgroundColor: '#FFF3E0',
+              borderRadius: 20,
+              paddingHorizontal: 8,
+              paddingVertical: 6,
+              flexDirection: 'row',
+              alignItems: 'center',
+              overflow: 'hidden',
+            }}
+            activeOpacity={0.88}
+            onPress={() => comingSoon('Reminders')}
+          >
+            <Image
+              source={assets.bento.reminders}
+              style={{ width: 66, height: 66 }}
+              contentFit="contain"
+            />
+            <Text style={{ fontSize: 12.5, fontWeight: '800', color: '#5D4037', marginLeft: 3 }}>
+              Reminders
+            </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity className="flex-1 bg-white rounded-2xl py-4 px-1 items-center border border-slate-100 shadow-sm" activeOpacity={0.85} onPress={() => navigation.navigate('AskDoctor')}>
-            <View className="w-14 h-14 rounded-full bg-[#FFEBEE] items-center justify-center mb-2">
-              <HelpCircle size={24} color="#F44336" />
-            </View>
-            <Text className="text-xs font-semibold color-[#0F224A] text-center" numberOfLines={1}>Ask a Doctor</Text>
+          {/* Card 6: Ask a Doctor */}
+          <TouchableOpacity
+            style={{
+              flex: 1,
+              backgroundColor: '#FDEEEE',
+              borderRadius: 20,
+              paddingHorizontal: 8,
+              paddingVertical: 6,
+              flexDirection: 'row',
+              alignItems: 'center',
+              overflow: 'hidden',
+            }}
+            activeOpacity={0.88}
+            onPress={() => navigation.navigate('AskDoctor')}
+          >
+            <Image
+              source={assets.bento.askDoctor}
+              style={{ width: 66, height: 66 }}
+              contentFit="contain"
+            />
+            <Text style={{ fontSize: 12.5, fontWeight: '800', color: '#5C1D1D', marginLeft: 2 }}>
+              Ask a Doctor
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -288,10 +416,10 @@ export function HomeScreen() {
               </View>
 
               <TouchableOpacity
-                className="bg-[#0d254c] border border-[#0d254c] rounded-full px-4 py-1.5"
+                className="bg-[#0d254c] border border-[#0d254c] rounded-full px-5 py-2 shadow-sm shadow-[#00A8B5]/20"
                 onPress={() => navigation.navigate('DoctorProfile', { doctor })}
               >
-                <Text className="text-xs font-bold color-white">Book</Text>
+                <Text className="text-sm font-bold color-white">Book</Text>
               </TouchableOpacity>
             </TouchableOpacity>
           );

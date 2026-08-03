@@ -176,7 +176,7 @@ export function AppointmentsScreen() {
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0F525D" />
+          <ActivityIndicator size="large" color="#00A8B5" />
           <Text style={styles.loadingText}>Loading appointments...</Text>
         </View>
       ) : error ? (
@@ -195,8 +195,8 @@ export function AppointmentsScreen() {
             <RefreshControl
               refreshing={isRefreshing}
               onRefresh={onRefresh}
-              tintColor="#0F525D"
-              colors={['#0F525D']}
+              tintColor="#00A8B5"
+              colors={['#00A8B5']}
             />
           }
           ListEmptyComponent={
@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
     color: '#64748B',
   },
   tabTextActive: {
-    color: '#0F525D',
+    color: '#00A8B5',
     fontWeight: '700',
   },
   listContent: {
