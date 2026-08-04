@@ -81,7 +81,6 @@ export const InstagramComingSoon: React.FC = () => {
           resizeMode="cover"
         />
         <Text style={styles.followButtonText}>Follow us on Instagram</Text>
-        <Feather name="external-link" size={16} color="#FFFFFF" />
       </TouchableOpacity>
     </View>
   );
