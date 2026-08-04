@@ -166,8 +166,9 @@ export function DoctorProfileScreen() {
   }, [selectedDate, doctor.doctor_id, getISODateString, loadBookedSlots]);
 
   const initials = useMemo(() => {
-    return doctor.doctor_name
+    return (doctor.doctor_name || 'Dr')
       .split(' ')
+      .filter(Boolean)
       .map((w) => w[0])
       .slice(0, 2)
       .join('')
@@ -184,9 +185,16 @@ export function DoctorProfileScreen() {
   }, [selectedDate]);
 
   const parsedLanguages = useMemo(() => {
-    return (doctor.doctor_languages || 'English, Telugu, Hindi')
-      .split(',')
-      .map((lang) => lang.trim());
+    const raw = doctor.doctor_languages;
+    if (Array.isArray(raw)) {
+      const cleaned = raw.map((lang) => String(lang).trim()).filter(Boolean);
+      return cleaned.length > 0 ? cleaned : ['English', 'Telugu', 'Hindi'];
+    }
+    if (typeof raw === 'string' && raw.trim().length > 0) {
+      const cleaned = raw.split(',').map((lang) => lang.trim()).filter(Boolean);
+      return cleaned.length > 0 ? cleaned : ['English', 'Telugu', 'Hindi'];
+    }
+    return ['English', 'Telugu', 'Hindi'];
   }, [doctor.doctor_languages]);
 
   async function handleBookAppointment() {

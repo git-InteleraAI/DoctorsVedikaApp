@@ -5,6 +5,8 @@
 const app = require('./app');
 const config = require('./config');
 
+const { initYoutubeSyncCron } = require('./cron/youtubeSyncCron');
+
 const PORT = config.port;
 
 const server = app.listen(PORT, () => {
@@ -19,7 +21,11 @@ const server = app.listen(PORT, () => {
 [Health]      http://localhost:${PORT}/health
 ======================================================
   `);
+
+  // Initialize background YouTube synchronization cron
+  initYoutubeSyncCron();
 });
+
 
 process.on('unhandledRejection', (err) => {
   console.error('[Unhandled Rejection]', err);

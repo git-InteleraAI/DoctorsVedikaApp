@@ -154,38 +154,38 @@ export function QuickBookingBanner({ onBookNow }: QuickBookingBannerProps) {
             </View>
           </TouchableOpacity>
 
-          {/* Bottom 3 Trust Pillars */}
-          <View className="flex-row items-center gap-3 border-t border-white/10 pt-2">
+          {/* Bottom 3 Trust Pillars with Dark Backdrop Container for High Contrast Readability */}
+          <View className="flex-row items-center justify-between bg-[#05142B]/90 border border-white/10 px-3 py-1.5 rounded-xl">
             {/* Pillar 1 */}
-            <View className="flex-row items-center gap-1">
-              <View className="w-5 h-5 rounded-full bg-[#00A8B5]/20 items-center justify-center">
-                <ShieldCheck size={12} color="#00A8B5" />
+            <View className="flex-row items-center gap-1.5">
+              <View className="w-5 h-5 rounded-full bg-[#00A8B5]/30 items-center justify-center">
+                <ShieldCheck size={11} color="#00E5FF" />
               </View>
               <View>
                 <Text className="text-[9.5px] font-bold color-white">Trusted Doctors</Text>
-                <Text className="text-[7.5px] color-white/60">Verified & Experienced</Text>
+                <Text className="text-[7.5px] color-[#A5F3FC]">Verified & Experienced</Text>
               </View>
             </View>
 
             {/* Pillar 2 */}
-            <View className="flex-row items-center gap-1">
-              <View className="w-5 h-5 rounded-full bg-[#00A8B5]/20 items-center justify-center">
-                <Clock size={12} color="#00A8B5" />
+            <View className="flex-row items-center gap-1.5">
+              <View className="w-5 h-5 rounded-full bg-[#00A8B5]/30 items-center justify-center">
+                <Clock size={11} color="#00E5FF" />
               </View>
               <View>
                 <Text className="text-[9.5px] font-bold color-white">Fast & Easy</Text>
-                <Text className="text-[7.5px] color-white/60">Book in few taps</Text>
+                <Text className="text-[7.5px] color-[#A5F3FC]">Book in few taps</Text>
               </View>
             </View>
 
             {/* Pillar 3 */}
-            <View className="flex-row items-center gap-1">
-              <View className="w-5 h-5 rounded-full bg-[#00A8B5]/20 items-center justify-center">
-                <Lock size={12} color="#00A8B5" />
+            <View className="flex-row items-center gap-1.5">
+              <View className="w-5 h-5 rounded-full bg-[#00A8B5]/30 items-center justify-center">
+                <Lock size={11} color="#00E5FF" />
               </View>
               <View>
                 <Text className="text-[9.5px] font-bold color-white">Secure & Safe</Text>
-                <Text className="text-[7.5px] color-white/60">Your data is protected</Text>
+                <Text className="text-[7.5px] color-[#A5F3FC]">Your data is protected</Text>
               </View>
             </View>
           </View>
@@ -203,4 +203,3 @@ export function QuickBookingBanner({ onBookNow }: QuickBookingBannerProps) {
     </View>
   );
 }
-

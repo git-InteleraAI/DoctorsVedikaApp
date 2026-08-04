@@ -34,6 +34,8 @@ app.get('/health', (req, res) => {
 
 // API Routes mounting
 app.use('/api/v1', routes);
+app.use('/api', routes);
+
 
 // Global Error Handler
 app.use(errorHandler);

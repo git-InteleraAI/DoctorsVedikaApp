@@ -16,6 +16,18 @@ class PatientRepository {
     return data;
   }
 
+  async updateUser(userId, userUpdates) {
+    const { data, error } = await supabase
+      .from('users')
+      .update(userUpdates)
+      .eq('id', userId)
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  }
+
   async updatePatient(userId, updateData) {
     const { data, error } = await supabase
       .from('patients')

@@ -71,6 +71,42 @@ const CATEGORIES = (active: string): SpecialtyCategory[] => [
   },
 ];
 
+const DiscoverAvatarItem: React.FC<{ doctor: DoctorsRow; styles: any }> = ({ doctor, styles }) => {
+  const [imageError, setImageError] = useState(false);
+
+  const cleanName = (doctor.doctor_name || '')
+    .replace(/^Dr\.\s*/i, '')
+    .replace(/^Dr\s+/i, '')
+    .trim();
+
+  const initials = cleanName
+    .split(' ')
+    .filter(Boolean)
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase() || 'D';
+
+  const photoUri = doctor.doctor_profile_photo?.trim();
+
+  return (
+    <View style={styles.avatarContainer}>
+      {photoUri && photoUri.length > 5 && !imageError ? (
+        <Image
+          source={{ uri: photoUri }}
+          style={styles.avatarImage}
+          onError={() => setImageError(true)}
+        />
+      ) : (
+        <View style={styles.avatarFallback}>
+          <Text style={styles.avatarFallbackText}>{initials}</Text>
+        </View>
+      )}
+      <View style={styles.activeDot} />
+    </View>
+  );
+};
+
 export function DiscoverScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
@@ -356,12 +392,10 @@ export function DiscoverScreen() {
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => {
             const isFav = favoriteDoctorIds.includes(item.doctor_id);
-            const initials = item.doctor_name
-              .split(' ')
-              .map((w) => w[0])
-              .slice(0, 2)
-              .join('')
-              .toUpperCase();
+            const cleanName = (item.doctor_name || '')
+              .replace(/^Dr\.\s*/i, '')
+              .replace(/^Dr\s+/i, '')
+              .trim();
 
             return (
               <TouchableOpacity
@@ -371,21 +405,12 @@ export function DiscoverScreen() {
               >
                 {/* Top Row: Avatar + Doctor Info + Favorite Button */}
                 <View style={styles.cardHeaderRow}>
-                  <View style={styles.avatarContainer}>
-                    {item.doctor_profile_photo ? (
-                      <Image source={{ uri: item.doctor_profile_photo }} style={styles.avatarImage} />
-                    ) : (
-                      <View style={styles.avatarFallback}>
-                        <Text style={styles.avatarFallbackText}>{initials}</Text>
-                      </View>
-                    )}
-                    <View style={styles.activeDot} />
-                  </View>
+                  <DiscoverAvatarItem doctor={item} styles={styles} />
 
                   <View style={styles.infoSection}>
                     <View style={styles.nameRow}>
                       <Text style={styles.doctorName} numberOfLines={1}>
-                        Dr. {item.doctor_name}
+                        Dr. {cleanName}
                       </Text>
                       <MaterialCommunityIcons name="check-decagram" size={16} color="#00BCD4" style={styles.verifiedIcon} />
                     </View>
@@ -439,7 +464,11 @@ export function DiscoverScreen() {
                     <Text style={styles.tagText}>{item.doctor_qualification ?? 'MBBS, MD'}</Text>
                   </View>
                   <View style={styles.tag}>
-                    <Text style={styles.tagText}>{item.doctor_languages ?? 'General Specialist'}</Text>
+                    <Text style={styles.tagText}>
+                      {Array.isArray(item.doctor_languages)
+                        ? item.doctor_languages.join(', ')
+                        : (item.doctor_languages ?? 'General Specialist')}
+                    </Text>
                   </View>
                 </View>
 

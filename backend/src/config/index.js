@@ -19,4 +19,10 @@ module.exports = {
   aiServices: {
     baseUrl: process.env.AI_SERVICES_URL || 'http://localhost:8000',
   },
+  youtube: {
+    apiKey: process.env.YOUTUBE_API_KEY || '',
+    channelId: process.env.YOUTUBE_CHANNEL_ID || '',
+    channelUrl: process.env.YOUTUBE_CHANNEL_URL || '',
+  },
 };
+

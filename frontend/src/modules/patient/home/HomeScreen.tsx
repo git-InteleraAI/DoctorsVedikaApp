@@ -15,18 +15,12 @@ import {
   Search,
   SlidersHorizontal,
   MessageCircle,
-  Video,
-  FileText,
-  Pill,
-  Bell,
-  HelpCircle,
   BadgeCheck,
   Star,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { theme } from '../../../core/theme';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getTopDoctors, subscribeDoctorUpdates } from '../../../features/doctor-discovery/api';
 import { getNotifications } from '../../../features/notifications/api';
@@ -48,6 +42,49 @@ function getGreeting(): string {
 function comingSoon(feature: string) {
   Alert.alert(feature, `${feature} is coming in a later module.`);
 }
+
+/**
+ * Bulletproof Doctor Avatar component with explicit inline dimensions for Android compatibility.
+ */
+const DoctorAvatarItem: React.FC<{ doctor: DoctorsRow }> = ({ doctor }) => {
+  const [imageError, setImageError] = useState(false);
+
+  const cleanName = (doctor.doctor_name || '')
+    .replace(/^Dr\.\s*/i, '')
+    .replace(/^Dr\s+/i, '')
+    .trim();
+
+  const initials = cleanName
+    .split(' ')
+    .filter(Boolean)
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase() || 'D';
+
+  const photoUri = doctor.doctor_profile_photo?.trim();
+
+  return (
+    <View style={{ width: 56, height: 56, position: 'relative', marginRight: 14 }}>
+      {photoUri && photoUri.length > 5 && !imageError ? (
+        <Image
+          source={{ uri: photoUri }}
+          style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: '#E0F7FA' }}
+          contentFit="cover"
+          onError={(err) => {
+            console.warn('[DoctorAvatarItem] Error loading image:', doctor.doctor_name, err);
+            setImageError(true);
+          }}
+        />
+      ) : (
+        <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: '#00BCD4', alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 18 }}>{initials}</Text>
+        </View>
+      )}
+      <View style={{ position: 'absolute', bottom: 0, right: 0, width: 14, height: 14, borderRadius: 7, backgroundColor: '#4CAF50', borderWidth: 2, borderColor: '#FFFFFF' }} />
+    </View>
+  );
+};
 
 export function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -136,10 +173,14 @@ export function HomeScreen() {
           onPress={() => (navigation as any).navigate('Profile')}
         >
           {avatarUrl ? (
-            <Image source={{ uri: avatarUrl }} className="w-12 h-12 rounded-full mr-3 bg-slate-200" contentFit="cover" />
+            <Image
+              source={{ uri: avatarUrl }}
+              style={{ width: 48, height: 48, borderRadius: 24, marginRight: 12, backgroundColor: '#E2E8F0' }}
+              contentFit="cover"
+            />
           ) : (
-            <View className="w-12 h-12 rounded-full bg-[#0284C7] items-center justify-center mr-3">
-              <Text className="color-white font-bold text-base">{initials}</Text>
+            <View style={{ width: 48, height: 48, borderRadius: 24, marginRight: 12, backgroundColor: '#0284C7', alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 16 }}>{initials}</Text>
             </View>
           )}
           <View className="justify-center">
@@ -369,12 +410,8 @@ export function HomeScreen() {
       {/* Doctor Cards */}
       <View className="gap-3">
         {topDoctors.map((doctor) => {
-          const docInitials = doctor.doctor_name
-            .split(' ')
-            .map((w) => w[0])
-            .slice(0, 2)
-            .join('')
-            .toUpperCase();
+          const rawName = doctor.doctor_name || '';
+          const cleanName = rawName.replace(/^Dr\.\s*/i, '').replace(/^Dr\s+/i, '').trim();
 
           return (
             <TouchableOpacity
@@ -383,21 +420,13 @@ export function HomeScreen() {
               activeOpacity={0.9}
               onPress={() => navigation.navigate('DoctorProfile', { doctor })}
             >
-              <View className="relative mr-3.5">
-                {doctor.doctor_profile_photo ? (
-                  <Image source={{ uri: doctor.doctor_profile_photo }} className="w-14 h-14 rounded-full bg-slate-200" contentFit="cover" />
-                ) : (
-                  <View className="w-14 h-14 rounded-full bg-[#00BCD4] items-center justify-center">
-                    <Text className="color-white font-bold text-lg">{docInitials}</Text>
-                  </View>
-                )}
-                <View className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-[#4CAF50] border-2 border-white" />
-              </View>
+              {/* Doctor Avatar Container */}
+              <DoctorAvatarItem doctor={doctor} />
 
               <View className="flex-1">
                 <View className="flex-row items-center mb-0.5">
                   <Text className="text-base font-bold color-[#0F224A]" numberOfLines={1}>
-                    Dr. {doctor.doctor_name}
+                    Dr. {cleanName}
                   </Text>
                   <BadgeCheck size={16} color="#00BCD4" className="ml-1" />
                 </View>
@@ -428,5 +457,3 @@ export function HomeScreen() {
     </ScrollView>
   );
 }
-
-
