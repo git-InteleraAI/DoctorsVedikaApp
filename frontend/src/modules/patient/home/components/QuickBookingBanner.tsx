@@ -1,6 +1,6 @@
 /**
  * frontend/src/modules/patient/home/components/QuickBookingBanner.tsx
- * Premium Quick Booking Banner with seamlessly aligned background waves and uniform dark navy trust pillars.
+ * Premium Quick Booking Banner matching reference design with 3D Booking Icon image.
  */
 import React from 'react';
 import {
@@ -60,37 +60,37 @@ export function QuickBookingBanner({ onBookNow }: QuickBookingBannerProps) {
           <Circle cx="32" cy="34" r="1.5" fill="#00A8B5" opacity={0.2} />
           <Circle cx="40" cy="34" r="1.5" fill="#00A8B5" opacity={0.2} />
 
-          {/* Parabolic Lens Layer 1: Solid Teal Parabolic Ribbon (Shifted Right to Keep Left Content on Dark Navy) */}
+          {/* Parabolic Lens Layer 1: Solid Teal Parabolic Ribbon */}
           <Path
-            d="M 310 0 
-               C 270 75, 270 225, 310 300 
-               H 335 
-               C 295 225, 295 75, 335 0 Z"
+            d="M 260 0 
+               C 195 75, 195 225, 260 300 
+               H 290 
+               C 225 225, 225 75, 290 0 Z"
             fill="url(#tealRibbonGrad)"
           />
 
-          {/* Parabolic Lens Layer 2: White/Mint Parabolic Aperture Cutout (Shifted Right Behind 3D Booking Icon) */}
+          {/* Parabolic Lens Layer 2: White/Mint Parabolic Aperture Cutout (Right 35%) */}
           <Path
-            d="M 330 0 
-               C 290 75, 290 225, 330 300 
+            d="M 280 0 
+               C 215 75, 215 225, 280 300 
                H 400 V 0 Z"
             fill="#EAF7F8"
           />
 
           {/* Parabolic Lens Layer 3: Luminous Cyan Rim Light Arc */}
           <Path
-            d="M 310 0 
-               C 270 75, 270 225, 310 300"
+            d="M 260 0 
+               C 195 75, 195 225, 260 300"
             stroke="url(#rimHighlightGrad)"
             strokeWidth="3.5"
             fill="none"
           />
 
-          {/* Concentric Dotted Halo Circles Frame 3D Booking Image */}
+          {/* 3 Concentric Dotted Halo Circles Shifted to Top Middle */}
           <Circle
-            cx="345"
-            cy="90"
-            r="64"
+            cx="310"
+            cy="100"
+            r="72"
             stroke="#00A8B5"
             strokeWidth="1.5"
             strokeDasharray="6 6"
@@ -98,9 +98,9 @@ export function QuickBookingBanner({ onBookNow }: QuickBookingBannerProps) {
             opacity={0.35}
           />
           <Circle
-            cx="345"
-            cy="90"
-            r="46"
+            cx="310"
+            cy="100"
+            r="52"
             stroke="#00A8B5"
             strokeWidth="1.2"
             strokeDasharray="4 4"
@@ -108,9 +108,9 @@ export function QuickBookingBanner({ onBookNow }: QuickBookingBannerProps) {
             opacity={0.28}
           />
           <Circle
-            cx="345"
-            cy="90"
-            r="28"
+            cx="310"
+            cy="100"
+            r="32"
             stroke="#00A8B5"
             strokeWidth="1"
             strokeDasharray="3 3"
@@ -154,48 +154,48 @@ export function QuickBookingBanner({ onBookNow }: QuickBookingBannerProps) {
             </View>
           </TouchableOpacity>
 
-          {/* Bottom 3 Trust Pillars - All 3 Uniformly Rendered on Dark Navy Background */}
-          <View className="flex-row items-center gap-3 border-t border-white/10 pt-2">
+          {/* Bottom 3 Trust Pillars with Dark Backdrop Container for High Contrast Readability */}
+          <View className="flex-row items-center justify-between bg-[#05142B]/90 border border-white/10 px-3 py-1.5 rounded-xl">
             {/* Pillar 1 */}
-            <View className="flex-row items-center gap-1">
-              <View className="w-5 h-5 rounded-full bg-[#00A8B5]/20 items-center justify-center">
-                <ShieldCheck size={12} color="#00A8B5" />
+            <View className="flex-row items-center gap-1.5">
+              <View className="w-5 h-5 rounded-full bg-[#00A8B5]/30 items-center justify-center">
+                <ShieldCheck size={11} color="#00E5FF" />
               </View>
               <View>
                 <Text className="text-[9.5px] font-bold color-white">Trusted Doctors</Text>
-                <Text className="text-[7.5px] color-white/60">Verified & Experienced</Text>
+                <Text className="text-[7.5px] color-[#94A3B8]">Verified & Experienced</Text>
               </View>
             </View>
 
             {/* Pillar 2 */}
-            <View className="flex-row items-center gap-1">
-              <View className="w-5 h-5 rounded-full bg-[#00A8B5]/20 items-center justify-center">
-                <Clock size={12} color="#00A8B5" />
+            <View className="flex-row items-center gap-1.5">
+              <View className="w-5 h-5 rounded-full bg-[#00A8B5]/30 items-center justify-center">
+                <Clock size={11} color="#00E5FF" />
               </View>
               <View>
                 <Text className="text-[9.5px] font-bold color-white">Fast & Easy</Text>
-                <Text className="text-[7.5px] color-white/60">Book in few taps</Text>
+                <Text className="text-[7.5px] color-[#94A3B8]">Book in few taps</Text>
               </View>
             </View>
 
             {/* Pillar 3 */}
-            <View className="flex-row items-center gap-1">
-              <View className="w-5 h-5 rounded-full bg-[#00A8B5]/20 items-center justify-center">
-                <Lock size={12} color="#00A8B5" />
+            <View className="flex-row items-center gap-1.5">
+              <View className="w-5 h-5 rounded-full bg-[#00A8B5]/30 items-center justify-center">
+                <Lock size={11} color="#00E5FF" />
               </View>
               <View>
                 <Text className="text-[9.5px] font-bold color-white">Secure & Safe</Text>
-                <Text className="text-[7.5px] color-white/60">Your data is protected</Text>
+                <Text className="text-[7.5px] color-[#94A3B8]">Your data is protected</Text>
               </View>
             </View>
           </View>
         </View>
 
         {/* Right Side 3D Booking Icon Image Asset centered */}
-        <View className="w-[130px] items-center justify-center my-auto overflow-visible">
+        <View className="w-[140px] items-center justify-center my-auto overflow-visible">
           <Image
             source={assets.images.booking}
-            style={{ width: 140, height: 140 }}
+            style={{ width: 150, height: 150 }}
             contentFit="contain"
           />
         </View>
