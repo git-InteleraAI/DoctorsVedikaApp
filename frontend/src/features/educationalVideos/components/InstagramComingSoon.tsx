@@ -80,7 +80,7 @@ export const InstagramComingSoon: React.FC = () => {
           style={styles.button3dIcon}
           resizeMode="cover"
         />
-        <Text style={styles.followButtonText}>Follow @doctors_vedika on Instagram</Text>
+        <Text style={styles.followButtonText}>Follow us on Instagram</Text>
         <Feather name="external-link" size={16} color="#FFFFFF" />
       </TouchableOpacity>
     </View>
