@@ -32,7 +32,9 @@ Thumbs.db
 .vscode/
 
 # Environment variables
-.env*.local
+.env
+.env.local
+.env.*.local
 
 # TypeScript
 *.tsbuildinfo
